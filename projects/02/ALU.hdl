@@ -43,4 +43,29 @@ CHIP ALU {
 
     PARTS:
    // Put you code here:
+   Mux16(a=x, b=false, sel=zx, out=outx1);
+   Not16(in=outx1, out=notoutx);
+   Mux16(a=outx1, b=notoutx, sel=nx, out=outx);
+
+   Mux16(a=y, b=false, sel=zy, out=outy1);
+   Not16(in=outy1, out=notouty);
+   Mux16(a=outy1, b=notouty, sel=ny, out=outy);
+
+   Add16(a=outx, b=outy, out=addxy);
+   And16(a=outx, b=outy, out=andxy);
+   Mux16(a=andxy, b=addxy, sel=f, out=outxy);  // if f then out=x+y else out=x&y
+
+   Not16(in=outxy, out=notoutxy);
+   Mux16(a=outxy, b=notoutxy, sel=no, out=out1);   // if no, out=!out
+
+   // is zero
+   Or16Way(in=out1, out=zr1);
+   Not(in=zr1, out=zr);
+
+   // is negative
+   // Cannot use: And(a=out1[15], b=true, out=ng);
+   // as internal subbus is not supported
+   IsNeg16(in=out1, out=ng);
+
+   Or16(a=out1, b=false, out=out);
 }
