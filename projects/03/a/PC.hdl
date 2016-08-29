@@ -17,4 +17,15 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
+    Inc16(in=regout, out=incOne);
+    Mux16(a=false, b=incOne, sel=inc, out=incOut);
+    Mux16(a=incOut, b=in, sel=load, out=loadout);
+    Mux16(a=loadout, b=false, sel=reset, out=toload); 
+
+    // credit: https://github.com/havivha/Nand2Tetris/blob/master/03/a/PC.hdl   
+    Or(a=load, b=reset, out=loadOrReset);
+    Or(a=loadOrReset, b=inc, out=loadflag);
+    Register(in=toload, load=loadflag, out=regout);
+
+    Or16(a=regout, b=regout, out=out);
 }
