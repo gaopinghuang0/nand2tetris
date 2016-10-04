@@ -9,3 +9,49 @@
 // program clears the screen, i.e. writes "white" in every pixel.
 
 // Put your code here.
+
+(LOOP)
+    @status
+    M = 0
+
+    @KBD
+    D = M
+    @SETSCREEN
+    D; JEQ
+    @status
+    M = -1  // press any key
+    
+
+
+   (SETSCREEN)
+    @8191
+    D = A
+    @i
+    M = D
+
+    (LOOP1)
+        @i
+        D = M
+        @LOOP
+        D; JLT
+
+        @SCREEN
+        D = A
+        @i
+        D = D + M
+        @tmp
+        M = D
+        @status
+        D = M   // RAM[i] = 0 or -1 based on status
+        @tmp
+        A = M
+        M = D
+
+        @i
+        M = M - 1
+
+        @LOOP1
+        0; JMP
+
+    @LOOP
+    0; JMP
