@@ -40,4 +40,55 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    // AI is A-instruction, CI is C-instruction
+    DMux(in=true, sel=instruction[15], a=AI, b=CI);
+
+    // A register
+    // comp: the result of ALU can be used ahead
+    And(a=CI, b=instruction[5], out=writeA);  // dest of A
+    Or(a=AI, b=writeA, out=loadA);  // load when AI or writeA
+    Mux16(a=instruction, b=comp, sel=writeA, out=inOrComp);
+    ARegister(in=inOrComp, load=loadA, out=aout);
+
+    // D
+    And(a=CI, b=instruction[4], out=writeD);
+    DRegister(in=comp, load=writeD, out=dout);
+
+    // Based on Figure 4.3
+    // if a=0, D is x input of ALU, A is y input
+    // if a=1, D is x input of ALU, M is y input
+    Mux16(a=aout, b=inM, sel=instruction[12], out=AorM);
+
+    ALU(x=dout, y=AorM, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=comp, zr=zr, ng=ng);
+
+
+    And(a=CI, b=instruction[3], out=writeM);
+    Or16(a=false, b=comp, out=outM);
+    
+    // Credit: https://github.com/havivha/Nand2Tetris/blob/master/05/CPU.hdl#L61
+    // how to output part of the pins
+    Or16(a=false, b=aout, out[0..14]=addressM);
+
+    // set PC
+    // Figure 4.5
+    And(a=zr, b=instruction[1], out=jeq);  // out is zero and jump on zero
+    And(a=ng, b=instruction[2], out=jlt);
+    Or(a=jeq, b=jlt, out=jle);
+
+    Or(a=zr, b=ng, out=negORzero);
+    Not(in=negORzero, out=pos);
+    And(a=pos, b=instruction[0], out=jgt);
+
+    // we have all the jump conditions so far
+    Or(a=jle, b=jgt, out=jmpA);
+    
+    // credit: https://github.com/havivha/Nand2Tetris/blob/master/05/CPU.hdl#L73
+    // Forgot this: only jump if CI
+    And(a=CI, b=jmpA, out=PCload);
+
+    Not(in=PCload, out=inc);
+    PC(in=aout, load=PCload, inc=inc, reset=reset, out[0..14]=pc);
+
+    
+
 }
