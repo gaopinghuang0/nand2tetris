@@ -16,12 +16,31 @@ PC(in=aout, load=PCload, inc=inc, reset=reset, out[0..14]=pc);
 @value
 ```
 Sets the A register to `value`; Side effect: RAM[A] becomes the selected RAM register, in which M register refers to RAM[A].  For example `@21`, sets A register to 21, RAM[21] becomes the selected RAM, and M register refers to RAM[21].
+```hack
+@21
+D=M   // load RAM[21] to D
 
+@22
+M=D+1  // save D+1 to RAM[22], here, D+1 is RAM[21]+1
+```
 * For ROM and jump:
 ```hack
 // if (D-1==0) then jump to location ROM[56]
 @56   // set A=56
 D-1;JEQ    // jump to instruction ROM[A] if true, namely ROM[56]
+```
+* For variable and pointer
+```hack
+@temp
+M=D  // temp = D
+
+// suppose arr and i are defined
+// set RAM[arr+i] = -1, namely, arr[i] = -1
+@arr   
+D=M
+@i
+A=D+M  <-- key of pointer
+M=-1
 ```
 5. More about A, D, M registers
 * A - Use to store address or immediate value (number)
