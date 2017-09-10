@@ -125,9 +125,7 @@ class CodeWriter(object):
     seg = self._get_seg(cmd)
     self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'D=D+A'])
     self._save_to_reg('D', R_COPY)
-    self._dec_sp()
-    self._load_sp()
-    self.write_cmd('D=M')
+    self._stack_to_D()
     self._load_from_reg(R_COPY)
     self.write_cmd('M=D')
 
