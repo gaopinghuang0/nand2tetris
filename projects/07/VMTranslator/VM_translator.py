@@ -12,7 +12,7 @@ import os
 import re
 import sys
 
-from parser import Parser
+from my_parser import Parser
 from code_writer import CodeWriter
 from command_type import CommandType
 
@@ -46,12 +46,12 @@ def main():
   argv = sys.argv
   size = len(argv)
 
-  default = ['./StackArithmetic/SimpleAdd/SimpleAdd.vm',
-    './StackArithmetic/StackTest/StackTest.vm',
-    './MemoryAccess/BasicTest/BasicTest.vm',
-    './MemoryAccess/StaticTest/StaticTest.vm',
-    './MemoryAccess/PointerTest/PointerTest.vm',
-    ][1]
+  default = ['../StackArithmetic/SimpleAdd/SimpleAdd.vm',
+    '../StackArithmetic/StackTest/StackTest.vm',
+    '../MemoryAccess/BasicTest/BasicTest.vm',
+    '../MemoryAccess/StaticTest/StaticTest.vm',
+    '../MemoryAccess/PointerTest/PointerTest.vm',
+    ][2]
 
   if size < 2:
     print('Usage: python VM_translator.py somefile.vm')

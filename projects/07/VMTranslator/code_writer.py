@@ -10,6 +10,9 @@ Since: 2017-09-09
 
 from command_type import CommandType
 
+R_R5 = R_TEMP = 5
+R_R15 = R_COPY  = 15
+
 class CodeWriter(object):
   def __init__(self, outfile):
     self.f = open(outfile, 'w')
@@ -80,20 +83,44 @@ class CodeWriter(object):
     if cmd.cmd_type == CommandType.C_PUSH:
       if cmd.arg1 == 'constant':
         # push, SP++
-        self.write_cmd(['@'+cmd.arg2, 'D=A', '@SP', 'A=M', 'M=D', '@SP', 'M=M+1'])
+        self.write_cmd(['@'+cmd.arg2, 'D=A'])
+        self._D_to_stack()
+      if cmd.arg1 in ['local', 'argument', 'this', 'that']:
+        self._push_basic_seg(cmd)
+      elif cmd.arg1 == 'temp':
+        self.write_cmd('@R%d'%(R_TEMP+int(cmd.arg2)))
+        self.write_cmd('D=M')
+        self._D_to_stack()
+      elif cmd.arg1 == 'static':
+        pass
+      elif cmd.arg1 == 'pointer':
+        pass
     else:
-      pass
+      if cmd.arg1 in ['local', 'argument', 'this', 'that']:
+        self._pop_basic_seg(cmd)
+      elif cmd.arg1 == 'temp':
+        self._dec_sp()
+        self._load_sp()
+        self.write_cmd('D=M')
+        self.write_cmd('@R%d'%(R_TEMP+int(cmd.arg2)))
+        self.write_cmd('M=D')
+      elif cmd.arg1 == 'static':
+        pass
+      elif cmd.arg1 == 'pointer':
+        pass
 
   def close(self):
     self.f.close()
     print('file closed:', self.f.closed)
 
   def write_comment(self, cmd):
-    # self.write_cmd('// '+cmd.source)
-    pass
+    self.write_cmd('// '+cmd.source)
 
   def _dec_sp(self):
     self.write_cmd(['@SP', 'M=M-1'])
+
+  def _inc_sp(self):
+    self.write_cmd(['@SP', 'M=M+1'])
 
   def _load_sp(self):
     self.write_cmd(['@SP', 'A=M'])
@@ -141,5 +168,39 @@ class CodeWriter(object):
     self.label_num += 1
     return 'LABEL%d'%self.label_num
 
+  def _save_to_reg(self, src, reg):
+    self.write_cmd(['@%d'%reg, 'M='+src])
 
+  def _load_from_reg(self, reg):
+    self.write_cmd(['@R%d'%reg, 'A=M'])
 
+  def _get_seg(self, cmd):
+    if cmd.arg1 == 'local':
+      seg = 'LCL'
+    elif cmd.arg1 == 'argument':
+      seg = 'ARG'
+    else:
+      seg = cmd.arg1.upper()
+    return seg
+
+  def _push_basic_seg(self, cmd):
+    # addr = segmentPointer + i, *SP=*addr, SP++
+    seg = self._get_seg(cmd)
+    self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'A=D+A', 'D=M'])
+    self._D_to_stack()
+
+  def _pop_basic_seg(self, cmd):
+    # addr = segmentPointer + i, SP--, *addr=*SP
+    seg = self._get_seg(cmd)
+    self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'D=D+A'])
+    self._save_to_reg('D', R_COPY)
+    self._dec_sp()
+    self._load_sp()
+    self.write_cmd('D=M')
+    self._load_from_reg(R_COPY)
+    self.write_cmd('M=D')
+
+  def _D_to_stack(self):
+    self._load_sp()
+    self.write_cmd('M=D')
+    self._inc_sp()
