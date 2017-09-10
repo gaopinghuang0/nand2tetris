@@ -81,9 +81,12 @@ class CodeWriter(object):
     self._dec_sp()
 
   def write_push_pop(self, cmd):
-    def reg_num(name, offset):
-      reg = {"temp": R_TEMP, "pointer": R_THIS}[name]
-      return reg + int(offset)
+    def access_mem(name, offset):
+      if name == 'static':
+        self._a_command('FooStatic.'+offset)
+      else:
+        base_reg = {"temp": R_TEMP, "pointer": R_THIS}[name]
+        self._access_reg(base_reg + int(offset))
 
     self.write_comment(cmd)
     if cmd.cmd_type == CommandType.C_PUSH:
@@ -93,28 +96,40 @@ class CodeWriter(object):
         self._D_to_stack()
       if cmd.arg1 in ['local', 'argument', 'this', 'that']:
         self._push_basic_seg(cmd)
-      elif cmd.arg1 in ['temp', 'pointer']:
-        # *SP=*(TEMP+i), SP++
+      elif cmd.arg1 in ['temp', 'pointer', 'static']:
+        # *SP = *(TEMP+i), SP++
         # *SP = *(THIS/THAT), SP++
-        self._access_reg(reg_num(cmd.arg1, cmd.arg2))
+        # *SP = *(FooStatic.i), SP++
+        access_mem(cmd.arg1, cmd.arg2)
         self.write_cmd('D=M')
         self._D_to_stack()
-      elif cmd.arg1 == 'static':
-        pass
     else:
       if cmd.arg1 in ['local', 'argument', 'this', 'that']:
         self._pop_basic_seg(cmd)
-      elif cmd.arg1 in ['temp', 'pointer']:
+      elif cmd.arg1 in ['temp', 'pointer', 'static']:
         # SP--, *(TEMP+i) = *SP
         # SP--, *(THIS/THAT) = *SP
-        self._dec_sp()
-        self._load_sp()
-        self.write_cmd('D=M')
-        self._access_reg(reg_num(cmd.arg1, cmd.arg2))
+        # SP--, *(FooStatic.i) = *SP
+        self._stack_to_D()
+        access_mem(cmd.arg1, cmd.arg2)
         self.write_cmd('M=D')
-      elif cmd.arg1 == 'static':
-        pass
- 
+
+  def _push_basic_seg(self, cmd):
+    # addr = segmentPointer + i, *SP=*addr, SP++
+    seg = self._get_seg(cmd)
+    self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'A=D+A', 'D=M'])
+    self._D_to_stack()
+
+  def _pop_basic_seg(self, cmd):
+    # addr = segmentPointer + i, SP--, *addr=*SP
+    seg = self._get_seg(cmd)
+    self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'D=D+A'])
+    self._save_to_reg('D', R_COPY)
+    self._dec_sp()
+    self._load_sp()
+    self.write_cmd('D=M')
+    self._load_from_reg(R_COPY)
+    self.write_cmd('M=D')
 
   def close(self):
     self.f.close()
@@ -184,7 +199,10 @@ class CodeWriter(object):
     self.write_cmd('A=M')
 
   def _access_reg(self, reg):
-    self.write_cmd('@R%d'%reg)
+    self._a_command('R%d'%reg)
+
+  def _a_command(self, a):
+    self.write_cmd('@'+a)
 
   def _get_seg(self, cmd):
     if cmd.arg1 == 'local':
@@ -195,24 +213,12 @@ class CodeWriter(object):
       seg = cmd.arg1.upper()
     return seg
 
-  def _push_basic_seg(self, cmd):
-    # addr = segmentPointer + i, *SP=*addr, SP++
-    seg = self._get_seg(cmd)
-    self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'A=D+A', 'D=M'])
-    self._D_to_stack()
-
-  def _pop_basic_seg(self, cmd):
-    # addr = segmentPointer + i, SP--, *addr=*SP
-    seg = self._get_seg(cmd)
-    self.write_cmd(['@'+seg, 'D=M', '@'+cmd.arg2, 'D=D+A'])
-    self._save_to_reg('D', R_COPY)
-    self._dec_sp()
-    self._load_sp()
-    self.write_cmd('D=M')
-    self._load_from_reg(R_COPY)
-    self.write_cmd('M=D')
-
   def _D_to_stack(self):
     self._load_sp()
     self.write_cmd('M=D')
     self._inc_sp()
+
+  def _stack_to_D(self):
+    self._dec_sp()
+    self._load_sp()
+    self.write_cmd('D=M')
