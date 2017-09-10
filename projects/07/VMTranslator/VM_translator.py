@@ -51,7 +51,7 @@ def main():
     '../MemoryAccess/BasicTest/BasicTest.vm',
     '../MemoryAccess/StaticTest/StaticTest.vm',
     '../MemoryAccess/PointerTest/PointerTest.vm',
-    ][2]
+    ][4]
 
   if size < 2:
     print('Usage: python VM_translator.py somefile.vm')

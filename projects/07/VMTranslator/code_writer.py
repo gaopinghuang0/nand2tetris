@@ -10,6 +10,8 @@ Since: 2017-09-09
 
 from command_type import CommandType
 
+R_R3 = R_THIS = 3
+R_R4 = R_THAT = 4
 R_R5 = R_TEMP = 5
 R_R15 = R_COPY  = 15
 
@@ -79,6 +81,10 @@ class CodeWriter(object):
     self._dec_sp()
 
   def write_push_pop(self, cmd):
+    def reg_num(name, offset):
+      reg = {"temp": R_TEMP, "pointer": R_THIS}[name]
+      return reg + int(offset)
+
     self.write_comment(cmd)
     if cmd.cmd_type == CommandType.C_PUSH:
       if cmd.arg1 == 'constant':
@@ -87,27 +93,28 @@ class CodeWriter(object):
         self._D_to_stack()
       if cmd.arg1 in ['local', 'argument', 'this', 'that']:
         self._push_basic_seg(cmd)
-      elif cmd.arg1 == 'temp':
-        self.write_cmd('@R%d'%(R_TEMP+int(cmd.arg2)))
+      elif cmd.arg1 in ['temp', 'pointer']:
+        # *SP=*(TEMP+i), SP++
+        # *SP = *(THIS/THAT), SP++
+        self._access_reg(reg_num(cmd.arg1, cmd.arg2))
         self.write_cmd('D=M')
         self._D_to_stack()
       elif cmd.arg1 == 'static':
         pass
-      elif cmd.arg1 == 'pointer':
-        pass
     else:
       if cmd.arg1 in ['local', 'argument', 'this', 'that']:
         self._pop_basic_seg(cmd)
-      elif cmd.arg1 == 'temp':
+      elif cmd.arg1 in ['temp', 'pointer']:
+        # SP--, *(TEMP+i) = *SP
+        # SP--, *(THIS/THAT) = *SP
         self._dec_sp()
         self._load_sp()
         self.write_cmd('D=M')
-        self.write_cmd('@R%d'%(R_TEMP+int(cmd.arg2)))
+        self._access_reg(reg_num(cmd.arg1, cmd.arg2))
         self.write_cmd('M=D')
       elif cmd.arg1 == 'static':
         pass
-      elif cmd.arg1 == 'pointer':
-        pass
+ 
 
   def close(self):
     self.f.close()
@@ -169,10 +176,15 @@ class CodeWriter(object):
     return 'LABEL%d'%self.label_num
 
   def _save_to_reg(self, src, reg):
-    self.write_cmd(['@%d'%reg, 'M='+src])
+    self._access_reg(reg)
+    self.write_cmd('M='+src)
 
   def _load_from_reg(self, reg):
-    self.write_cmd(['@R%d'%reg, 'A=M'])
+    self._access_reg(reg)
+    self.write_cmd('A=M')
+
+  def _access_reg(self, reg):
+    self.write_cmd('@R%d'%reg)
 
   def _get_seg(self, cmd):
     if cmd.arg1 == 'local':
