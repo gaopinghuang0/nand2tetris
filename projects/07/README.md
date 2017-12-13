@@ -1,5 +1,7 @@
 ## Project 07
 
+Translate `*.vm` file into `*.asm` file. So far, it only supports topics shown in `./covered_topics.png`.
+
 ### Getting started
 
 ```bash
