@@ -34,11 +34,11 @@ class CodeWriter(object):
     def pop_stack_twice():
       # more efficient way
       # since *SP is not updated except the end
-      # D is the SP-1, M is the SP-2
+      # D is the *(*SP-1), M is the *(*SP-2)
       self.write_cmd(['@SP', 'A=M-1', 'D=M', 'A=A-1'])
     def pop_stack_once():
       # note that *SP is not updated
-      # D is the SP-1
+      # D is the *(*SP-1)
       self.write_cmd(['@SP', 'A=M-1', 'D=M'])
 
     self.write_comment(cmd)
@@ -147,23 +147,29 @@ class CodeWriter(object):
 
   def _compare(self, comp):
     """
+    Write code for comparision, e.g., JNE, JLE, JGE..
+
+    If the comparision result is true, return -1, else 0.
+    Since we don't have enough registers to save -1 and 0 at the same time,
+    we have to use two branches (branch1 to assign -1 and branch2 to assign 0)
+
     pop_stack_twice()
-    D=D-M
+    D=D-M   # now D is the diff between the last two values on the stack
     @Label1
     D;comp  // (e.g., JNE, JLE, JGE)
     @-1
-    D=A
+    D=A   # save -1 to D
     @SP
     A=M-2
-    M=D
+    M=D   # assign -1 to *SP-2 if it's true
     @Label2
     0;JMP
     (Label1)
     @0
-    D=A
+    D=A   # save 0 to D
     @SP
     A=M-2
-    M=D
+    M=D   # assign 0 to *SP-2 if it's false
     (Label2)
     """
     def save_int(num):

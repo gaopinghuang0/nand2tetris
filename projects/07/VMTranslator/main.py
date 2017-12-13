@@ -8,6 +8,7 @@ Author: Gaoping Huang
 Since: 2017-09-09
 '''
 
+import sys
 from VM_translator import VMTranslator
 
 def main():
@@ -19,10 +20,10 @@ def main():
     '../MemoryAccess/BasicTest/BasicTest.vm',
     '../MemoryAccess/StaticTest/StaticTest.vm',
     '../MemoryAccess/PointerTest/PointerTest.vm',
-    ][4]
+    ][1]
 
   if size < 2:
-    print('Usage: python VM_translator.py somefile.vm')
+    print('Usage: python main.py somefile.vm')
     print('using default file: %s...'%default)
     infile = default
   else:

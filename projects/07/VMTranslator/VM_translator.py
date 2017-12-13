@@ -9,8 +9,6 @@ Since: 2017-09-09
 '''
 
 import os
-import re
-import sys
 
 from my_parser import Parser
 from code_writer import CodeWriter
