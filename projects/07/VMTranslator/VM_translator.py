@@ -23,7 +23,7 @@ class VMTranslator(object):
 
   def translate(self, infile, outfile=None):
     """
-    Translate *.vm file into assembly  *.asm
+    Translate *.vm file into assembly *.asm file
     """
     if not outfile:
       path, name = os.path.split(infile)
@@ -42,28 +42,5 @@ class VMTranslator(object):
     codeWriter.close()
 
 
-def main():
-  argv = sys.argv
-  size = len(argv)
-
-  default = ['../StackArithmetic/SimpleAdd/SimpleAdd.vm',
-    '../StackArithmetic/StackTest/StackTest.vm',
-    '../MemoryAccess/BasicTest/BasicTest.vm',
-    '../MemoryAccess/StaticTest/StaticTest.vm',
-    '../MemoryAccess/PointerTest/PointerTest.vm',
-    ][4]
-
-  if size < 2:
-    print('Usage: python VM_translator.py somefile.vm')
-    print('using default file: %s...'%default)
-    infile = default
-  else:
-    infile = argv[1]
-
-  vm = VMTranslator()
-  vm.translate(infile)
-
-
-
 if __name__ == '__main__':
-  main()
+  pass

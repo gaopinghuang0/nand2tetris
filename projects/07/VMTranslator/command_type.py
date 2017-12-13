@@ -26,7 +26,3 @@ class CommandType(object):
 
   def __repr__(self):
     return 'CommandType(type={}, arg1={}, arg2={})'.format(self.cmd_type, self.arg1, self.arg2)
-
-    
-
-
