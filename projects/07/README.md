@@ -1,6 +1,6 @@
 ## Project 07
 
-Translate `*.vm` file into `*.asm` file. So far, it only supports topics shown in `./covered_topics.png`.
+Translate `*.vm` file into `*.asm` file.
 
 ### Getting started
 
@@ -20,3 +20,5 @@ $ python main.py [filename.vm]  # translate *.vm into filename.asm
 2. To generate code for comparision operations, such as `eq` and `jt`, we have to use two branches in which branch1 is to assign value -1 if the result is true, the branch2 is to assign 0 if it's false.  See more details in `VMTranslator/code_writer.py` -- `self._compare()` method.
 
 
+### Covered topics
+![covered topics](./covered_topics.png)
