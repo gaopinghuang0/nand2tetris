@@ -1,4 +1,4 @@
-# My notes of learning Nand2Tetris
+# Notes on Nand2Tetris Part I
 
 ## About `*.hdl` (hardware description language) file 
 * [HDL Survival Guide](http://nand2tetris.org/software/HDL%20Survival%20Guide.html)
