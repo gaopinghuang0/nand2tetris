@@ -33,4 +33,4 @@ A: It saves the position of code to be executed right after the execution of cal
   * `FunctionCalls/SimpleFunction`
   * `FunctionCalls/NestedCall` -- has two html files describing more details
   * `FunctionCalls/FibonacciElement`
-  * `FunctionCalls/StaticsTest`
+  * `FunctionCalls/StaticsTest` -- each class needs to maintain its own `static` segment.

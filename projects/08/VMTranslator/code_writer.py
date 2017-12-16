@@ -246,7 +246,9 @@ class CodeWriter(object):
 
     def _access_mem(self, segment, index):
         if segment == 'static':
-            self._a_command('FooStatic.'+index)
+            # each class maintain its own static segment
+            _class = self.curr_func.split('.')[0]
+            self._a_command('{}.Static.{}'.format(_class, index))
         else:
             base_reg = {"temp": R_TEMP, "pointer": R_THIS}[segment]
             self._access_reg(base_reg + int(index))
