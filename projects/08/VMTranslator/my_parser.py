@@ -26,7 +26,10 @@ class Parser(object):
         _statement = statement.split('//')[0].strip()
         args = _statement.split(' ')
         if len(args) == 1:
-          yield Command(Command.C_ARITHMETIC, args[0], source=statement)
+          if args[0] == 'return':
+            yield Command(Command.C_RETURN, args[0], source=statement)
+          else:
+            yield Command(Command.C_ARITHMETIC, args[0], source=statement)
         else:
           if args[0] == 'push':
             assert len(args) == 3
@@ -43,6 +46,11 @@ class Parser(object):
           elif args[0] == 'if-goto':
             assert len(args) == 2
             yield Command(Command.C_IF, args[1], source=statement)
+          elif args[0] == 'function':
+            assert len(args) == 3
+            yield Command(Command.C_FUNCTION, args[1], int(args[2]), source=statement)
+          elif args[0] == 'call':
+            assert len(args) == 3
+            yield Command(Command.C_CALL, args[1], int(args[2]), source=statement)         
           else:
-            # TODO: in the future
-            pass
+            raise ValueError('Unknown statement')

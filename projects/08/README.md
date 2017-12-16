@@ -22,7 +22,7 @@ $ python main.py [filename.vm|directoryName]
 
 
 ### Notes (including screenshots from Coursera and slides from nand2tetris.org)
-* [Lecture slides: 08 virtual machine PDF](http://nand2tetris.org/lectures/PDF/lecture%2008%20virtual%20machine%20II.pdf)
+* [Lecture slides: 08 virtual machine PDF](http://nand2tetris.org/lectures/PDF/lecture%2008%20virtual%20machine%20II.pdf), including the implementation details of `call func nArgs`, `return`, and `function name nLocals`
 * ![function commands](./screenshots/1.png)
 * ![VM stack](./screenshots/2.png)
 * Q: Why do we need to save `returnAddress` when call function?

@@ -23,11 +23,6 @@ class CodeWriter(object):
     def write_cmd(self, *cmds):
         for cmd in cmds:
             self.f.write(cmd+'\n')
-        # if isinstance(cmd, list):
-        #     for c in cmd:
-        #         self.f.write(c+'\n')
-        # elif isinstance(cmd, str):
-        #     self.f.write(cmd+'\n')
 
     def write_arithmetic(self, cmd):
         """
@@ -75,44 +70,16 @@ class CodeWriter(object):
             pop_stack_twice()
             self._compare('JGE')
         else:
-            # raise ValueError('unknown arithmetic command')
-            pass
+            raise ValueError('unknown arithmetic command')
 
         # update *SP only once
         self._dec_sp()
 
     def write_push_pop(self, cmd_type, segment, index):
-        def access_mem(segment, index):
-            if segment == 'static':
-                self._a_command('FooStatic.'+index)
-            else:
-                base_reg = {"temp": R_TEMP, "pointer": R_THIS}[segment]
-                self._access_reg(base_reg + int(index))
-
         if cmd_type == Command.C_PUSH:
-            if segment == 'constant':
-                # push, SP++
-                self.write_cmd('@'+index, 'D=A')
-                self._D_to_stack()
-            if segment in ['local', 'argument', 'this', 'that']:
-                self._push_basic_seg(segment, index)
-            elif segment in ['temp', 'pointer', 'static']:
-                # *SP = *(TEMP+i), SP++
-                # *SP = *(THIS/THAT), SP++
-                # *SP = *(FooStatic.i), SP++
-                access_mem(segment, index)
-                self.write_cmd('D=M')
-                self._D_to_stack()
+            self._do_push(segment, index)
         else:
-            if segment in ['local', 'argument', 'this', 'that']:
-                self._pop_basic_seg(segment, index)
-            elif segment in ['temp', 'pointer', 'static']:
-                # SP--, *(TEMP+i) = *SP
-                # SP--, *(THIS/THAT) = *SP
-                # SP--, *(FooStatic.i) = *SP
-                self._stack_to_D()
-                access_mem(segment, index)
-                self.write_cmd('M=D')
+            self._do_pop(segment, index)
 
     def write_comment(self, msg):
         self.write_cmd('// '+ msg)
@@ -140,26 +107,49 @@ class CodeWriter(object):
         pass
 
     def write_return(self):
-        pass
+        def _load_frame_to_D(index):
+            self._access_mem('temp', 1)
+            self.write_cmd('D=M')
+            self._a_command(index)
+            self.write_cmd('A=D-A', 'D=M')
+
+        # frame = *LCL, frame is a temp var
+        self._a_command('LCL')
+        self.write_cmd('D=M')
+        self._access_mem('temp', 1)
+        self.write_cmd('M=D')
+        # returnAddr = *(frame-5), returnAddr is a temp var
+        _load_frame_to_D(5)
+        self._access_mem('temp', 2)
+        self.write_cmd('M=D')
+        # *ARG = pop(), save return value for the caller
+        self._do_pop('argument', 0)
+        # SP = *ARG + 1, restore caller's SP
+        self._a_command('ARG')
+        self.write_cmd('D=M+1')
+        self.write_cmd('@SP', 'M=D')
+        # THAT = *(frame-1)
+        _load_frame_to_D(1)
+        self.write_cmd('@THAT', 'M=D')
+        # THIS = *(frame-2)
+        _load_frame_to_D(2)
+        self.write_cmd('@THIS', 'M=D')
+        # ARG = *(frame-3)
+        _load_frame_to_D(3)
+        self.write_cmd('@ARG', 'M=D')
+        # LCL = *(frame-4)
+        _load_frame_to_D(4)
+        self.write_cmd('@LCL', 'M=D')
+        # goto returnAddr, namely @returnAddr
+        self._access_mem('temp', 2)
+        self.write_cmd('A=M')
+        self.write_cmd('0;JMP')
 
     def write_function(self, func, n_locals):
-        pass
-
-
-    def _push_basic_seg(self, segment, index):
-        # addr = segmentPointer + i, *SP=*addr, SP++
-        seg = self._get_seg(segment)
-        self.write_cmd('@'+seg, 'D=M', '@'+index, 'A=D+A', 'D=M')
-        self._D_to_stack()
-
-    def _pop_basic_seg(self, segment, index):
-        # addr = segmentPointer + i, SP--, *addr=*SP
-        seg = self._get_seg(segment)
-        self.write_cmd('@'+seg, 'D=M', '@'+index, 'D=D+A')
-        self._save_to_reg('D', R_COPY)
-        self._stack_to_D()
-        self._load_from_reg(R_COPY)
-        self.write_cmd('M=D')
+        self.write_cmd('(%s)'%func)
+        self.write_cmd('@0', 'D=A')
+        for i in range(n_locals):
+            self._D_to_stack()   # push constant 0 to local var
 
     def _dec_sp(self):
         self.write_cmd('@SP', 'M=M-1')
@@ -170,13 +160,100 @@ class CodeWriter(object):
     def _load_sp(self):
         self.write_cmd('@SP', 'A=M')
 
+    def _new_label(self):
+        self.label_num += 1
+        return 'LABEL%d'%self.label_num
+
+    def _save_to_reg(self, src, reg):
+        self._access_reg(reg)
+        self.write_cmd('M='+src)
+
+    def _load_from_reg(self, reg):
+        self._access_reg(reg)
+        self.write_cmd('A=M')
+
+    def _access_reg(self, reg):
+        self._a_command('R%d'%reg)
+
+    def _a_command(self, a):
+        self.write_cmd('@%s'%a)
+
+    def _get_seg(self, segment):
+        if segment == 'local':
+            seg = 'LCL'
+        elif segment == 'argument':
+            seg = 'ARG'
+        else:
+            seg = segment.upper()
+        return seg
+
+    def _D_to_stack(self):
+        self._load_sp()
+        self.write_cmd('M=D')
+        self._inc_sp()
+
+    def _stack_to_D(self):
+        self._dec_sp()
+        self._load_sp()
+        self.write_cmd('D=M')
+
+    def _access_mem(self, segment, index):
+        if segment == 'static':
+            self._a_command('FooStatic.'+index)
+        else:
+            base_reg = {"temp": R_TEMP, "pointer": R_THIS}[segment]
+            self._access_reg(base_reg + int(index))
+
+    def _do_push(self, segment, index):
+        """Push the value from segment$index into stack."""
+        if segment == 'constant':
+            # push, SP++
+            self.write_cmd('@'+index, 'D=A')
+            self._D_to_stack()
+        if segment in ['local', 'argument', 'this', 'that']:
+            self._push_basic_seg(segment, index)
+        elif segment in ['temp', 'pointer', 'static']:
+            # *SP = *(TEMP+i), SP++
+            # *SP = *(THIS/THAT), SP++
+            # *SP = *(FooStatic.i), SP++
+            self._access_mem(segment, index)
+            self.write_cmd('D=M')
+            self._D_to_stack()
+
+    def _do_pop(self, segment, index):
+        """Pop the stack topmost value and save as segment$index."""
+        if segment in ['local', 'argument', 'this', 'that']:
+            self._pop_basic_seg(segment, index)
+        elif segment in ['temp', 'pointer', 'static']:
+            # SP--, *(TEMP+i) = *SP
+            # SP--, *(THIS/THAT) = *SP
+            # SP--, *(FooStatic.i) = *SP
+            self._stack_to_D()
+            self._access_mem(segment, index)
+            self.write_cmd('M=D')
+
+    def _push_basic_seg(self, segment, index):
+        # addr = segmentPointer + i, *SP=*addr, SP++
+        seg = self._get_seg(segment)
+        self.write_cmd('@'+seg, 'D=M', '@%s'%index, 'A=D+A', 'D=M')
+        self._D_to_stack()
+
+    def _pop_basic_seg(self, segment, index):
+        # addr = segmentPointer + i, SP--, *addr=*SP
+        seg = self._get_seg(segment)
+        self.write_cmd('@'+seg, 'D=M', '@%s'%index, 'D=D+A')
+        self._save_to_reg('D', R_COPY)
+        self._stack_to_D()
+        self._load_from_reg(R_COPY)
+        self.write_cmd('M=D')
+
     def _compare(self, comp):
         """
         Write code for comparision, e.g., JNE, JLE, JGE..
 
         If the comparision result is true, return -1, else 0.
-        Since we don't have enough registers to save -1 and 0 at the same time,
-        we have to use two branches (branch1 to assign -1 and branch2 to assign 0)
+        Therefore, we need to use two labels to support this if-else control flow 
+        (branch1 to assign -1 and branch2 to assign 0)
 
         pop_stack_twice()
         D=D-M   # now D is the diff between the last two values on the stack
@@ -215,39 +292,3 @@ class CodeWriter(object):
         save_int(0)
         self.write_cmd('(%s)'%label2)
 
-    def _new_label(self):
-        self.label_num += 1
-        return 'LABEL%d'%self.label_num
-
-    def _save_to_reg(self, src, reg):
-        self._access_reg(reg)
-        self.write_cmd('M='+src)
-
-    def _load_from_reg(self, reg):
-        self._access_reg(reg)
-        self.write_cmd('A=M')
-
-    def _access_reg(self, reg):
-        self._a_command('R%d'%reg)
-
-    def _a_command(self, a):
-        self.write_cmd('@'+a)
-
-    def _get_seg(self, segment):
-        if segment == 'local':
-            seg = 'LCL'
-        elif segment == 'argument':
-            seg = 'ARG'
-        else:
-            seg = segment.upper()
-        return seg
-
-    def _D_to_stack(self):
-        self._load_sp()
-        self.write_cmd('M=D')
-        self._inc_sp()
-
-    def _stack_to_D(self):
-        self._dec_sp()
-        self._load_sp()
-        self.write_cmd('D=M')

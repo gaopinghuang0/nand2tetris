@@ -40,7 +40,12 @@ class VMTranslator(object):
         codeWriter.write_goto(cmd.arg1)
       elif cmd.cmd_type == cmd.C_IF:
         codeWriter.write_if(cmd.arg1)
+      elif cmd.cmd_type == cmd.C_FUNCTION:
+        codeWriter.write_function(cmd.arg1, cmd.arg2)
+      elif cmd.cmd_type == cmd.C_RETURN:
+        codeWriter.write_return()
+      elif cmd.cmd_type == cmd.C_CALL:
+        codeWriter.write_call(cmd.arg1, cmd.arg2)
       else:
-        # TODO: in the future
-        pass
+        raise ValueError('Unknown command type')
     codeWriter.close()
