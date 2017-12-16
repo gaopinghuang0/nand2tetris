@@ -19,6 +19,8 @@ class CodeWriter(object):
     def __init__(self, outfile):
         self.f = open(outfile, 'w')
         self.label_num = 0
+        self.curr_func = ''
+        self.ret_label_num = 0
 
     def write_cmd(self, *cmds):
         for cmd in cmds:
@@ -104,7 +106,40 @@ class CodeWriter(object):
         self.write_cmd('D;JNE')  # jump if D != 0
 
     def write_call(self, func, n_args):
-        pass
+        """
+        Translate `call func n_args` and save context of caller to the stack.
+        We assume that n_args arguments have been pushed onto the stack.
+        """
+        def _save_context_to_stack(context):
+            self._a_command(context)
+            self.write_cmd('D=M')
+            self._D_to_stack()
+
+        # push returnAddr, generate a symbol
+        returnAddr = self._new_ret_label()
+        self._a_command(returnAddr)
+        self.write_cmd('D=A')
+        self._D_to_stack()
+        # push LCL, ARG, THIS, THAT
+        for ctx in ['LCL', 'ARG', 'THIS', 'THAT']:
+            _save_context_to_stack(ctx)
+        # ARG = *SP-n_args-5
+        self.write_cmd('@SP', 'D=M')
+        if n_args > 0:
+            self._a_command(n_args)
+            self.write_cmd('D=D-A')
+        self._a_command(5)
+        self.write_cmd('D=D-A')
+        self._a_command('ARG')
+        self.write_cmd('M=D')
+        # LCL = *SP
+        self.write_cmd('@SP', 'D=M')
+        self._a_command('LCL')
+        self.write_cmd('M=D')
+        # goto func
+        self.write_goto(func)
+        # (returnAddr)
+        self.write_label(returnAddr)
 
     def write_return(self):
         def _load_frame_to_D(index):
@@ -146,7 +181,10 @@ class CodeWriter(object):
         self.write_cmd('0;JMP')
 
     def write_function(self, func, n_locals):
-        self.write_cmd('(%s)'%func)
+        self.write_label(func)
+        # save func to generate returnAddr in call function
+        self.curr_func = func
+        self.ret_label_num = 0
         self.write_cmd('@0', 'D=A')
         for i in range(n_locals):
             self._D_to_stack()   # push constant 0 to local var
@@ -163,6 +201,10 @@ class CodeWriter(object):
     def _new_label(self):
         self.label_num += 1
         return 'LABEL%d'%self.label_num
+
+    def _new_ret_label(self):
+        self.ret_label_num += 1
+        return '{}.ret.{}'.format(self.curr_func, self.ret_label_num)
 
     def _save_to_reg(self, src, reg):
         self._access_reg(reg)
@@ -288,7 +330,7 @@ class CodeWriter(object):
         save_int(-1)
         label2 = self._new_label()
         self.write_cmd('@'+label2, '0;JMP')
-        self.write_cmd('(%s)'%label1)
+        self.write_label(label1)
         save_int(0)
-        self.write_cmd('(%s)'%label2)
+        self.write_label(label2)
 

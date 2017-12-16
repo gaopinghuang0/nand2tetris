@@ -7,8 +7,9 @@ and the book "The Elements of Computing Systems"
 Author: Gaoping Huang
 Since: 2017-09-09
 '''
-
+import os
 import sys
+import glob
 from VM_translator import VMTranslator
 
 def main():
@@ -17,15 +18,18 @@ def main():
     if len(argv) < 2:
         print('Usage: python main.py [filename.vm|dir]')
     else:
-        infile = get_files(argv[1])
+        infiles, outfile = get_files(argv[1])
+        print(infiles)
+        print(outfile)
         vm = VMTranslator()
-        vm.translate(infile)
+        vm.translate_all(infiles, outfile)
 
 def get_files(file_or_dir):
     if file_or_dir.endswith('.vm'):
-        return file_or_dir
+        return [file_or_dir], file_or_dir.replace('.vm', '.asm')
     else:
-        raise NotImplementedError
+        _, name = os.path.split(file_or_dir.rstrip('/'))
+        return glob.glob(file_or_dir+'/*.vm'), os.path.join(file_or_dir, name+'.asm')
 
 
 if __name__ == '__main__':
