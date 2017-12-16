@@ -43,6 +43,7 @@ class VMTranslator(object):
 
   def translate_all(self, infiles, outfile):
     codeWriter = CodeWriter(outfile)
+    codeWriter.write_init()
     for infile in infiles:
       parser = Parser(infile)
       self._translate(codeWriter, parser)

@@ -19,7 +19,7 @@ class CodeWriter(object):
     def __init__(self, outfile):
         self.f = open(outfile, 'w')
         self.label_num = 0
-        self.curr_func = ''
+        self.curr_func = 'Global.Bootstrap'
         self.ret_label_num = 0
 
     def write_cmd(self, *cmds):
@@ -92,6 +92,11 @@ class CodeWriter(object):
 
     def write_init(self):
         self.write_comment("bootstrap code")
+        # SP = 256
+        self._a_command(256)
+        self.write_cmd('D=A', '@SP', 'M=D')
+        # call Sys.init 0
+        self.write_call('Sys.init', 0)
 
     def write_label(self, label):
         self.write_cmd('(%s)'%label)
