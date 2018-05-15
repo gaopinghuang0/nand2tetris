@@ -16,7 +16,9 @@ def main():
     argv = sys.argv
 
     if len(argv) < 2:
-        print('Usage: python main.py [filename.vm|dir]')
+        print('Usage: python main.py [filename.vm|dir_name]')
+        print('filename.vm  convert a single source file to filename.asm')
+        print('dir_name     convert all *.vm files into one directoryName.asm')
     else:
         infiles, outfile = get_files(argv[1])
         print(infiles)
