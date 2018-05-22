@@ -42,7 +42,7 @@ class AdventureGame {
             // waits for a key to be pressed.
             while (key = 0) {
                 let key = Keyboard.keyPressed();
-                do moveAvatar();
+                // do moveAvatar();
             }
 
             if (key = 81) {

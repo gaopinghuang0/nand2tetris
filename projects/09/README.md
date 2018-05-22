@@ -13,4 +13,10 @@ Then load the whole directory (say MyApp) and run. Do not go inside the director
 ### Notes
 * More sample Jack apps (e.g., `Pong`) can be found in `./projects/11`. They are given as test cases for Jack compiler and thus can be treated as samples.
 * A bitmap editor is available at <http://www.nand2tetris.org/projects/09/BitmapEditor/BitmapEditor.html>, which can be used to create customized sprite.
-
+* Syntax highlighting for Jack in sublime text:
+  * https://github.com/swarn/sublime-jack
+  * https://www.sublimetext.com/docs/3/scope_naming.html
+* Use `when-changed`:
+```bash
+$ when-changed -v Pong/*.jack -c F:\\course\\Nand2Tetris\\tools\\JackCompiler.bat Pong
+```

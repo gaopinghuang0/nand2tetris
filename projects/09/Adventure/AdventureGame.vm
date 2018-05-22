@@ -39,9 +39,6 @@ not
 if-goto WHILE_END1
 call Keyboard.keyPressed 0
 pop local 0
-push pointer 0
-call AdventureGame.moveAvatar 1
-pop temp 0
 goto WHILE_EXP1
 label WHILE_END1
 push local 0

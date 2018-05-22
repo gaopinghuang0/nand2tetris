@@ -57,7 +57,7 @@ class PongGame {
     /** Deallocates the object's memory. */
     method void dispose() {
         do bat.dispose();
-                do ball.dispose();
+        do ball.dispose();
         do Memory.deAlloc(this);
         return;
     }
