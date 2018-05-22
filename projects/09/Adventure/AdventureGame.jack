@@ -1,0 +1,92 @@
+
+/**
+ * Implements the avatar Dance game.
+ * In this game you can move a black avatar around the screen and
+ * change its size during the movement.
+ * In the beginning, the avatar is located at the top-left corner
+ * of the screen. The arrow keys are used to move the avatar.
+ * The 'q' key is used to quit the game.
+ */
+class AdventureGame {
+
+    // The avatar
+    field Avatar avatar;
+
+    // The avatar's movement direction
+    field int direction; // 0=none,1=up,2=down,3=left,4=right
+
+    /** Constructs a new Avatar Game. */
+    constructor AdventureGame new() {
+        let avatar = Avatar.new(0, 0);
+        let direction = 0;
+
+        return this;
+    }
+
+    /** Deallocates the object's memory. */
+    method void dispose() {
+        do avatar.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Starts the game. Handles inputs from the user that control
+     *  the avatar's movement, direction and size. */
+    method void run() {
+        var char key;
+        var boolean exit;
+
+        let exit = false;
+
+        while (~exit) {
+            // waits for a key to be pressed.
+            while (key = 0) {
+                let key = Keyboard.keyPressed();
+                do moveAvatar();
+            }
+
+            if (key = 81) {
+                let exit = true;
+            }
+            if (key = 131) {
+                let direction = 1;
+            }
+            if (key = 133) {
+                let direction = 2;
+            }
+            if (key = 130) {
+                let direction = 3;
+            }
+            if (key = 132) {
+                let direction = 4;
+            }
+
+            // waits for the key to be released.
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+                do moveAvatar();
+            }
+        }
+            
+        return;
+	}
+
+    /** Moves the avatar by 2 pixels in the current direction. */
+    method void moveAvatar() {
+        if (direction = 1) {
+            do avatar.moveUp();
+        }
+        if (direction = 2) {
+            do avatar.moveDown();
+        }
+        if (direction = 3) {
+            do avatar.moveLeft();
+        }
+        if (direction = 4) {
+            do avatar.moveRight();
+        }
+
+        do Sys.wait(5); // Delays the next movement.
+        return;
+    }
+}

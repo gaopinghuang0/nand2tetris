@@ -1,0 +1,106 @@
+
+
+class Avatar {
+    // Location on the screen
+    field int x, y;
+
+    // The size of the square
+    field int size;
+
+    /** Constructs a new square with a given location and size. */
+    constructor Avatar new(int Ax, int Ay) {
+        let x = Ax;
+        let y = Ay;
+        let size = 16;
+
+        do draw();
+
+        return this;
+    }
+
+    /** Deallocates the object's memory. */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Draws the avatar on the screen. */
+    method void draw() {
+        var int location;  // a 16-bit address w.r.t the screen address 16384
+        var int memAddress;
+        let location = 0;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 4064);
+        do Memory.poke(memAddress+32, 6192);
+        do Memory.poke(memAddress+64, 4752);
+        do Memory.poke(memAddress+96, 4112);
+        do Memory.poke(memAddress+128, 2080);
+        do Memory.poke(memAddress+160, 6192);
+        do Memory.poke(memAddress+192, 8456);
+        do Memory.poke(memAddress+224, 16644);
+        do Memory.poke(memAddress+256, 19364);
+        do Memory.poke(memAddress+288, 20500);
+        do Memory.poke(memAddress+320, 12312);
+        do Memory.poke(memAddress+352, 4112);
+        do Memory.poke(memAddress+384, 4368);
+        do Memory.poke(memAddress+416, 4752);
+        do Memory.poke(memAddress+448, 16120);
+        do Memory.poke(memAddress+480, 32508);
+        return;
+    }
+
+    /** Erases the square from the screen. */
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x, y, x + size, y + size);
+        return;
+    }
+
+    /** Moves up by 2 pixels. */
+    method void moveUp() {
+        if (y > 1) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x, (y + size) - 1, x + size, y + size);
+            let y = y - 2;
+            do Screen.setColor(true);
+            do Screen.drawRectangle(x, y, x + size, y + 1);
+        }
+        return;
+    }
+
+    /** Moves down by 2 pixels. */
+    method void moveDown() {
+        if ((y + size) < 254) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x, y, x + size, y + 1);
+            let y = y + 2;
+            do Screen.setColor(true);
+            do Screen.drawRectangle(x, (y + size) - 1, x + size, y + size);
+        }
+        return;
+    }
+
+    /** Moves left by 2 pixels. */
+    method void moveLeft() {
+        if (x > 1) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle((x + size) - 1, y, x + size, y + size);
+            let x = x - 2;
+            do Screen.setColor(true);
+            do Screen.drawRectangle(x, y, x + 1, y + size);
+        }
+        return;
+    }
+
+    /** Moves right by 2 pixels. */
+    method void moveRight() {
+        if ((x + size) < 510) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x, y, x + 1, y + size);
+            let x = x + 2;
+            do Screen.setColor(true);
+            do Screen.drawRectangle((x + size) - 1, y, x + size, y + size);
+        }
+        return;
+    }
+}
