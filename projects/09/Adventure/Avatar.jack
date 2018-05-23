@@ -28,7 +28,7 @@ class Avatar {
     method void draw() {
         var int location;  // a 16-bit address w.r.t the screen address 16384
         var int memAddress;
-        let location = 0;
+        let location = (32*y) + (x/16);
         let memAddress = 16384+location;
         do Memory.poke(memAddress+0, 4064);
         do Memory.poke(memAddress+32, 6192);
@@ -49,21 +49,37 @@ class Avatar {
         return;
     }
 
-    /** Erases the square from the screen. */
+    /** Erases the avatar from the screen. */
     method void erase() {
-        do Screen.setColor(false);
-        do Screen.drawRectangle(x, y, x + size, y + size);
+        var int location;  // a 16-bit address w.r.t the screen address 16384
+        var int memAddress;
+        let location = (32*y) + (x/16);
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
         return;
     }
 
     /** Moves up by 2 pixels. */
     method void moveUp() {
         if (y > 1) {
-            do Screen.setColor(false);
-            do Screen.drawRectangle(x, (y + size) - 1, x + size, y + size);
+            do erase();
             let y = y - 2;
-            do Screen.setColor(true);
-            do Screen.drawRectangle(x, y, x + size, y + 1);
+            do draw();
         }
         return;
     }
@@ -71,11 +87,9 @@ class Avatar {
     /** Moves down by 2 pixels. */
     method void moveDown() {
         if ((y + size) < 254) {
-            do Screen.setColor(false);
-            do Screen.drawRectangle(x, y, x + size, y + 1);
+            do erase();
             let y = y + 2;
-            do Screen.setColor(true);
-            do Screen.drawRectangle(x, (y + size) - 1, x + size, y + size);
+            do draw();
         }
         return;
     }
@@ -83,11 +97,9 @@ class Avatar {
     /** Moves left by 2 pixels. */
     method void moveLeft() {
         if (x > 1) {
-            do Screen.setColor(false);
-            do Screen.drawRectangle((x + size) - 1, y, x + size, y + size);
+            do erase();
             let x = x - 2;
-            do Screen.setColor(true);
-            do Screen.drawRectangle(x, y, x + 1, y + size);
+            do draw();
         }
         return;
     }
@@ -95,11 +107,9 @@ class Avatar {
     /** Moves right by 2 pixels. */
     method void moveRight() {
         if ((x + size) < 510) {
-            do Screen.setColor(false);
-            do Screen.drawRectangle(x, y, x + 1, y + size);
+            do erase();
             let x = x + 2;
-            do Screen.setColor(true);
-            do Screen.drawRectangle((x + size) - 1, y, x + size, y + size);
+            do draw();
         }
         return;
     }

@@ -86,15 +86,15 @@ class PongGame {
                 do moveBall();
             }
 
-            if (key = 130) {
+            if (key = 130) {  // left arrow
                 do bat.setDirection(1);
             }
             else {
-                if (key = 132) {
+                if (key = 132) {  // right arrow
                     do bat.setDirection(2);
                 }
                 else {
-                    if (key = 140) {
+                    if (key = 140) {  // esc
                         let exit = true;
                     }
                 }
@@ -135,13 +135,15 @@ class PongGame {
             let ballLeft = ball.getLeft();
             let ballRight = ball.getRight();
         
-            if (wall = 4) {
+            if (wall = 4) {  // bottom wall
                 let exit = (batLeft > ballRight) | (batRight < ballLeft);
                 if (~exit) {
+                    // near the left end of bat
                     if (ballRight < (batLeft + 10)) {
                         let bouncingDirection = -1;
                     }
                     else {
+                        // near the right end of bat
                         if (ballLeft > (batRight - 10)) {
                             let bouncingDirection = 1;
                         }

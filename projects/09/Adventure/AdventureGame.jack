@@ -86,7 +86,7 @@ class AdventureGame {
             do avatar.moveRight();
         }
 
-        do Sys.wait(5); // Delays the next movement.
+        do Sys.wait(10); // Delays the next movement.
         return;
     }
 }
