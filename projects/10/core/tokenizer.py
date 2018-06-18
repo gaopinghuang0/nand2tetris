@@ -132,16 +132,20 @@ class Tokenizer(object):
     def __init__(self, inpt):
         lexer = Lexer(inpt)
         self.tokens = lexer.get_tokens()
+        self.index = -1
+        self.size = len(self.tokens)
         self.curr_token = None
 
     def has_more_tokens(self):
-        pass
+        return self.index + 1 < self.size
 
     def advance(self):
         # get the next token from the input and makes it the current token
-        pass
+        self.index += 1
+        self._token = self.tokens[self.index]
+        self.curr_token = self._token['text']
 
     def token_type(self):
         # return the type of the current token
         # KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST
-        pass
+        return self._token['type']

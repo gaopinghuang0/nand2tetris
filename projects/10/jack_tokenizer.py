@@ -2,7 +2,7 @@
 import sys
 import os
 
-from core.tokenizer import Lexer, Tokenizer
+from core.tokenizer import Tokenizer
 
 
 # tokenize a single file or directory
@@ -11,7 +11,10 @@ class JackTokenizer(object):
     def __init__(self, infile_or_dir, output_dir=None):
         self.infile_or_dir = infile_or_dir
         self.isdir = os.path.isdir(infile_or_dir)
+        self.set_output_dir(output_dir)
+        self.escape_dict = {'<': '&lt;', '>': '&gt;', '"': '&quot;', '&': '&amp;'}
 
+    def set_output_dir(self, output_dir):
         if output_dir:
             self.output_dir = output_dir
         else: # guess output dir
@@ -23,15 +26,15 @@ class JackTokenizer(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
-        self.escape_dict = {'<': '&lt;', '>': '&gt;', '"': '&quot;', '&': '&amp;'}
-
-    def save2xml(self, tokens, outfile):
+    def save2xml(self, tokenizer, outfile):
         with open(outfile, 'w') as fp:
             fp.write('<tokens>\n')
-            for token in tokens:
-                if token['text'] in self.escape_dict:  # escape
-                    token['text'] = self.escape_dict[token['text']]
-                fp.write('<{type}> {text} </{type}>\n'.format(**token))
+            while tokenizer.has_more_tokens():
+                tokenizer.advance()
+                token = tokenizer.curr_token
+                if token in self.escape_dict:
+                    token = self.escape_dict[token]
+                fp.write('<{type}> {token} </{type}>\n'.format(token=token, type=tokenizer.token_type()))
             fp.write('</tokens>\n')
 
     def run_one(self, infile):
@@ -40,10 +43,8 @@ class JackTokenizer(object):
         outfile = os.path.join(self.output_dir, base+'T.my.xml')
         print(outfile)
         with open(infile) as inpt:
-            lexer = Lexer(inpt)
-            tokens = lexer.get_tokens()
-            # save to outfile xml
-            self.save2xml(tokens, outfile)
+            tokenizer = Tokenizer(inpt)
+            self.save2xml(tokenizer, outfile)
 
     def run_all(self):
         if self.isdir:
