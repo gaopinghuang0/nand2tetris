@@ -20,7 +20,7 @@ class Lexer(object):
     def run(self):
         dbg_print(self.size)
         while self.idx < self.size:
-            ch = self.curr_ch()
+            ch = self.get_curr_ch()
             if self.is_whitespace(ch):
                 self.idx += 1
             elif ch == '"':
@@ -51,7 +51,7 @@ class Lexer(object):
     def is_whitespace(self, ch):
         return re.match('\s', ch)
 
-    def curr_ch(self):
+    def get_curr_ch(self):
         return self.chars[self.idx]
 
     def peek_next(self):
@@ -67,7 +67,7 @@ class Lexer(object):
         dbg_print('read_int')
         text = ''
         while self.idx < self.size:
-            ch = self.curr_ch()
+            ch = self.get_curr_ch()
             if self.is_digit(ch):
                 text += ch
                 self.idx += 1
@@ -84,7 +84,7 @@ class Lexer(object):
         dbg_print('read_string')
         text = ''
         while self.idx < self.size:
-            ch = self.curr_ch()
+            ch = self.get_curr_ch()
             if ch != '"':
                 text += ch
                 self.idx += 1
@@ -97,7 +97,7 @@ class Lexer(object):
         dbg_print('read_identifier')
         text = ''
         while self.idx < self.size:
-            ch = self.curr_ch()
+            ch = self.get_curr_ch()
             if re.match('\w', ch):
                 text += ch
                 self.idx += 1
@@ -111,7 +111,7 @@ class Lexer(object):
     def read_block_comment(self):
         dbg_print('read_block_comment')
         while self.idx < self.size:
-            ch = self.curr_ch()
+            ch = self.get_curr_ch()
             if ch == '*':
                 if self.peek_next() == '/':
                     self.idx += 2
@@ -121,14 +121,14 @@ class Lexer(object):
     def read_line_comment(self):
         dbg_print('read_line_comment')
         while self.idx < self.size:
-            ch = self.curr_ch()
+            ch = self.get_curr_ch()
             if ch == '\n':
                 self.idx += 1
                 break
             self.idx += 1
 
 # tokenize a single file stream
-class Tokenizer(object):
+class JackTokenizer(object):
     def __init__(self, inpt):
         lexer = Lexer(inpt)
         self.tokens = lexer.get_tokens()
@@ -144,6 +144,10 @@ class Tokenizer(object):
         self.index += 1
         self._token = self.tokens[self.index]
         self.curr_token = self._token['text']
+
+    def peek_next(self):
+        # peek the text of next token
+        return self.tokens[self.index+1]['text'] if self.has_more_tokens() else None
 
     def token_type(self):
         # return the type of the current token

@@ -2,12 +2,12 @@
 import sys
 import os
 
-from core.tokenizer import Tokenizer
+from core.jack_tokenizer import JackTokenizer
 
-
+SUFFIX = 'T.my.xml'
 # tokenize a single file or directory
 # output *T.xml if necessary
-class JackTokenizer(object):
+class MainTokenizer(object):
     def __init__(self, infile_or_dir, output_dir=None):
         self.infile_or_dir = infile_or_dir
         self.isdir = os.path.isdir(infile_or_dir)
@@ -40,10 +40,10 @@ class JackTokenizer(object):
     def run_one(self, infile):
         basename = os.path.basename(infile)
         base = os.path.splitext(basename)[0]
-        outfile = os.path.join(self.output_dir, base+'T.my.xml')
+        outfile = os.path.join(self.output_dir, base+SUFFIX)
         print(outfile)
         with open(infile) as inpt:
-            tokenizer = Tokenizer(inpt)
+            tokenizer = JackTokenizer(inpt)
             self.save2xml(tokenizer, outfile)
 
     def run_all(self):
@@ -57,10 +57,12 @@ class JackTokenizer(object):
 
 def main():
     if len(sys.argv) < 2:
-        print('Usage: ./jack_tokenizer.py infile_or_dir [outdir]')
+        print('Usage: ./main_tokenizer.py infile_or_dir [outdir]')
+        print('infile_or_dir   either a single file or src dir')
+        print('outdir          use the input dir if not specified')
         sys.exit(1)
-    jt = JackTokenizer(sys.argv[1], sys.argv[2] if len(sys.argv) >= 3 else None)
-    jt.run_all()
+    mt = MainTokenizer(sys.argv[1], sys.argv[2] if len(sys.argv) >= 3 else None)
+    mt.run_all()
 
 if __name__ == '__main__':
     main()

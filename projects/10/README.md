@@ -1,6 +1,6 @@
 ## Project 10: Compiler I - Syntax Analysis
-1. Description: http://www.nand2tetris.org/10.php
-2. Lecture notes: http://www.nand2tetris.org/lectures/PDF/lecture%2010%20compiler%20I.pdf
+1. Description: https://www.nand2tetris.org/project10
+2. Lecture notes: https://docs.wixstatic.com/ugd/44046b_aca87ffea29e416f8c0d7e9edbd6b273.pdf
 
 
 ### Recommended order of implementation and test
@@ -12,10 +12,10 @@
 ### Getting Started
 ```bash
 # tokenizer
-./jack_tokenizer.py  Square/  test/
+./main_tokenizer.py  Square/  test/
 ./xml_compare_helper.py -t Square/  test/
 # analyzer
-./jack_analyzer.py  Square/  test/
+./main_analyzer.py  Square/  test/
 ./xml_compare_helper.py -a Square/  test/
 ```
 
