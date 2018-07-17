@@ -25,5 +25,3 @@ Integral test for all dirs
 $ ./test_runner.sh -t   # test tokenizer
 $ ./test_runner.sh -a   # test analyzer
 ```
-
-### Notes

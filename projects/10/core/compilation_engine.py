@@ -1,11 +1,3 @@
-import re
-
-
-DEBUG = False
-def dbg_print(*kw):
-    if DEBUG:
-        print(*kw)
-
 
 # a recursive top-down parser for Jack
 class CompilationEngine(object):
@@ -31,7 +23,7 @@ class CompilationEngine(object):
     def _write_curr_token(self):
         self.fp.write('{indent}<{type}> {token} </{type}>\n'.format(
             indent=self.indent*' ',
-            token=self.tokenizer.curr_token,
+            token=self.tokenizer.escape(self.tokenizer.curr_token),
             type=self.tokenizer.token_type()
         ))
 
@@ -80,7 +72,7 @@ class CompilationEngine(object):
         while self.compile_var_dec():
             pass
         self.compile_statements()
-        # self._consume_symbol('}')  # TODO
+        self._consume_symbol('}')
         self._end_block('subroutineBody')
 
     def _compile_statement(self):
@@ -99,6 +91,25 @@ class CompilationEngine(object):
             return False
         return True
 
+    def _compile_subroutine_call(self):
+        self._compile_subroutine_name()  # also could be className, varName
+        token = self.tokenizer.peek_next()
+        if token == '(':
+            self._consume_symbol('(')
+            self.compile_expression_list()
+            self._consume_symbol(')')
+        elif token == '.':
+            self._consume_symbol('.')
+            self._compile_subroutine_name()
+            self._consume_symbol('(')
+            self.compile_expression_list()
+            self._consume_symbol(')')
+        else:
+            raise ValueError('Unknown symbol')
+
+    def _is_op(self, token):
+        # check if token is operator
+        return token in '+-*/&|<>='
 
 
     #### Below are public APIs ####
@@ -114,7 +125,7 @@ class CompilationEngine(object):
         # 0 or more subroutineDec
         while self.compile_subroutine():
             pass
-        # self._consume_symbol('}')  # TODO: uncomment it
+        self._consume_symbol('}')
         self._end_block('class')
 
     def compile_class_var_dec(self):
@@ -206,8 +217,12 @@ class CompilationEngine(object):
         self._end_block('statements')
 
     def compile_do(self):
-        pass
-
+        self._start_block('doStatement')
+        self._consume_keyword('do')
+        self._compile_subroutine_call()
+        self._consume_symbol(';')
+        self._end_block('doStatement')
+        
     def compile_let(self):
         self._start_block('letStatement')
         self._consume_keyword('let')
@@ -220,24 +235,109 @@ class CompilationEngine(object):
             self._consume_symbol(']')
         self._consume_symbol('=')
         self.compile_expression()
-        # self._consume_symbol(';')  # TODO
+        self._consume_symbol(';')
         self._end_block('letStatement')
 
     def compile_while(self):
-        pass
+        self._start_block('whileStatement')
+        self._consume_keyword('while')
+        self._consume_symbol('(')
+        self.compile_expression()
+        self._consume_symbol(')')
+        self._consume_symbol('{')
+        self.compile_statements()
+        self._consume_symbol('}')
+        self._end_block('whileStatement')
 
     def compile_return(self):
-        pass
-
+        self._start_block('returnStatement')
+        self._consume_keyword('return')
+        token = self.tokenizer.peek_next()
+        if token != ';':  # has return expression
+            self.compile_expression()
+        self._consume_symbol(';')
+        self._end_block('returnStatement')
+        
     def compile_if(self):
-        pass
-
+        self._start_block('ifStatement')
+        self._consume_keyword('if')
+        self._consume_symbol('(')
+        self.compile_expression()
+        self._consume_symbol(')')
+        self._consume_symbol('{')
+        self.compile_statements()
+        self._consume_symbol('}')
+        token = self.tokenizer.peek_next()
+        if token == 'else':
+            self._consume_keyword('else')
+            self._consume_symbol('{')
+            self.compile_statements()
+            self._consume_symbol('}')
+        self._end_block('ifStatement')
+        
     def compile_expression(self):
-        pass
-
+        self._start_block('expression')
+        self.compile_term()
+        # 0 or more (op term)
+        while True:
+            token = self.tokenizer.peek_next()
+            if self._is_op(token):
+                self._consume_symbol(token)
+                self.compile_term()
+            else:
+                break
+        self._end_block('expression')
+        
     def compile_term(self):
-        pass
+        self._start_block('term')
+        if self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
+            token = self.tokenizer.curr_token
+            token_type = self.tokenizer.token_type()
+            if token_type in ['integerConstant', 'stringConstant']:
+                self._write_curr_token()
+            elif token in ['true', 'false', 'null', 'this']:  # keywordConstant
+                self._write_curr_token()
+            elif token == '(':  # '(' expression ')'
+                self.tokenizer.move_back()
+                self._consume_symbol('(')
+                self.compile_expression()
+                self._consume_symbol(')')
+            elif token in '-~':  # unary op
+                self.tokenizer.move_back()
+                self._consume_symbol(token)
+                self.compile_term()
+            else:
+                assert token_type == 'identifier'  # the curr token type must be identifier to meet the remaining rules
+                next_token = self.tokenizer.peek_next()
+                if next_token == '[':  # varName '[' expression ']'
+                    self.tokenizer.move_back()
+                    self._compile_var_name()
+                    self._consume_symbol('[')
+                    self.compile_expression()
+                    self._consume_symbol(']')
+                elif next_token in '(.':  # subroutineCall
+                    self.tokenizer.move_back()
+                    self._compile_subroutine_call()
+                else:  # varName
+                    self.tokenizer.move_back()
+                    self._compile_var_name()
+        self._end_block('term')
 
     def compile_expression_list(self):
-        pass
+        self._start_block('expressionList')
+        token = self.tokenizer.peek_next()
+        if token == ')':   # no expression list, skip
+            self._end_block('expressionList')
+            return
+        self.compile_expression()
+        # 0 or more (',' expression)
+        while True:
+            token = self.tokenizer.peek_next()
+            if token == ',':
+                self._consume_symbol(',')
+                self.compile_expression()
+            else:
+                break
+        self._end_block('expressionList')
 

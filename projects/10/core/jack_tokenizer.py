@@ -135,15 +135,20 @@ class JackTokenizer(object):
         self.index = -1
         self.size = len(self.tokens)
         self.curr_token = None
+        self.escape_dict = {'<': '&lt;', '>': '&gt;', '"': '&quot;', '&': '&amp;'}
 
     def has_more_tokens(self):
         return self.index + 1 < self.size
 
-    def advance(self):
-        # get the next token from the input and makes it the current token
-        self.index += 1
+    def advance(self, step=1):
+        # advance to the next token from the input and make it the current token
+        self.index += step
         self._token = self.tokens[self.index]
         self.curr_token = self._token['text']
+
+    def move_back(self):
+        # the reverse of advance
+        self.advance(-1)
 
     def peek_next(self):
         # peek the text of next token
@@ -153,3 +158,6 @@ class JackTokenizer(object):
         # return the type of the current token
         # KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST
         return self._token['type']
+
+    def escape(self, token):
+        return self.escape_dict[token] if token in self.escape_dict else token
