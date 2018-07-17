@@ -10,6 +10,7 @@
 4. The `tools/TextCompiler.[bat|sh]` can be used to compare the generated xml file with given compare file. It will ignore the while space of the XML output, namely, the indentation of XML is only for readability.
 
 ### Getting Started
+Unit test for a single dir
 ```bash
 # tokenizer
 ./main_tokenizer.py  Square/  test/
@@ -19,5 +20,10 @@
 ./xml_compare_helper.py -a Square/  test/
 ```
 
+Integral test for all dirs
+```bash
+$ ./test_runner.sh -t   # test tokenizer
+$ ./test_runner.sh -a   # test analyzer
+```
 
 ### Notes
