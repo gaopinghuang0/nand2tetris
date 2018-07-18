@@ -1,6 +1,6 @@
 ## Project 08
 
-Translate `*.vm` file into `*.asm` file.
+Translate `*.vm` file into `*.asm` file, including branching and functions. See `covered_topics.png` for detail.
 
 ### Getting started
 

@@ -1,6 +1,6 @@
 ## Project 07
 
-Translate `*.vm` file into `*.asm` file.
+Translate `*.vm` file into `*.asm` file. See `covered_topics.png` for detail.
 
 ### Getting started
 
