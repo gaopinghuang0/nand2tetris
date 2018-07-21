@@ -1,3 +1,7 @@
+# Modified from project 10: compilation_engine.py
+# Since 7/21/2018
+
+from .symbol_table import SymbolTable
 
 # a recursive top-down parser for Jack
 class CompilationEngine(object):
@@ -5,6 +9,8 @@ class CompilationEngine(object):
         self.tokenizer = tokenizer
         self.fp = outfile
         self.indent = 0  # indent spaces
+        self.symtable = SymbolTable()
+        self.class_name = None
 
     #### Below are some internal helper functions ####
 
@@ -27,6 +33,20 @@ class CompilationEngine(object):
             type=self.tokenizer.token_type()
         ))
 
+    def _write_curr_identifier(self, usage):
+        "use special format to represent identifier"
+        name = self.tokenizer.curr_token
+        # I intentionly use this xml format although it is invalid,
+        # because it will be highlighted automatically by the text editor
+        self.fp.write('{indent}<{usage},{type},{kind},{index}> {token} </>\n'.format(
+            indent=self.indent*' ',
+            token=name,
+            type=self.symtable.get_type(name),
+            kind=self.symtable.get_kind(name),
+            index=self.symtable.get_index(name),
+            usage=usage
+        ))
+
     # check the next token with the given type and token_text
     # if matches, consume it and write to output
     def _consume(self, _type, token=None):
@@ -35,6 +55,7 @@ class CompilationEngine(object):
             if _type == self.tokenizer.token_type():
                 if token is None or token == self.tokenizer.curr_token:
                     self._write_curr_token()
+                    return self.tokenizer.curr_token
                 else:
                     raise ValueError('token text does not match, expect {}, got {}'.format(
                                     token, self.tokenizer.curr_token))
@@ -54,14 +75,25 @@ class CompilationEngine(object):
         token = self.tokenizer.peek_next()
         if token in ['int', 'char', 'boolean']:
             self._consume_keyword()
+            return token
         else:
-            self._consume('identifier')  # className
+            return self._consume('identifier')  # className
 
     def _compile_class_name(self):
-        self._consume('identifier')
+        return self._consume('identifier')
 
-    def _compile_var_name(self):
-        self._consume('identifier')
+    def _compile_var_name(self, _type=None, kind=None):
+        "if _type and kind are given, define new var, or else use defined var."
+        if self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
+            name = self.tokenizer.curr_token
+            if _type is not None:   # define new var
+                self.symtable.define(name, _type, kind)
+                self._write_curr_identifier('define')
+            else:
+                self._write_curr_identifier('use')
+        else:
+            raise ValueError('should have more tokens')
 
     def _compile_subroutine_name(self):
         self._consume('identifier')
@@ -92,20 +124,29 @@ class CompilationEngine(object):
         return True
 
     def _compile_subroutine_call(self):
-        self._compile_subroutine_name()  # also could be className, varName
-        token = self.tokenizer.peek_next()
-        if token == '(':
-            self._consume_symbol('(')
-            self.compile_expression_list()
-            self._consume_symbol(')')
-        elif token == '.':
-            self._consume_symbol('.')
-            self._compile_subroutine_name()
-            self._consume_symbol('(')
-            self.compile_expression_list()
-            self._consume_symbol(')')
-        else:
-            raise ValueError('Unknown symbol')
+        # the first token could be subroutineName, className, or varName
+        if self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
+            name = self.tokenizer.curr_token
+            next_token = self.tokenizer.peek_next()
+            self.tokenizer.move_back()
+            if next_token == '(':
+                self._compile_subroutine_name()
+                self._consume_symbol('(')
+                self.compile_expression_list()
+                self._consume_symbol(')')
+            elif next_token == '.':
+                if self.symtable.is_var(name):
+                    self._compile_var_name()
+                else:
+                    self._compile_class_name()
+                self._consume_symbol('.')
+                self._compile_subroutine_name()
+                self._consume_symbol('(')
+                self.compile_expression_list()
+                self._consume_symbol(')')
+            else:
+                raise ValueError('Unknown symbol')
 
     def _is_op(self, token):
         # check if token is operator
@@ -117,7 +158,7 @@ class CompilationEngine(object):
     def compile_class(self):
         self._start_block('class')
         self._consume_keyword('class')
-        self._compile_class_name()
+        self.class_name = self._compile_class_name()
         self._consume_symbol('{')
         # 0 or more classVarDec
         while self.compile_class_var_dec():
@@ -129,20 +170,20 @@ class CompilationEngine(object):
         self._end_block('class')
 
     def compile_class_var_dec(self):
-        token = self.tokenizer.peek_next()
-        if token not in ['static', 'field']:
+        kind = self.tokenizer.peek_next()
+        if kind not in ['static', 'field']:
             # no classVarDec, just skip
             return False
         self._start_block('classVarDec')
         self._consume_keyword()  # 'static' or 'field'
-        self._compile_type()
-        self._compile_var_name()  # varName
+        _type = self._compile_type()
+        self._compile_var_name(_type, kind)  # varName
         # 0 or more varName
         while True:
             token = self.tokenizer.peek_next()
             if token == ',':
                 self._consume_symbol(',')
-                self._compile_var_name()
+                self._compile_var_name(_type, kind)
             else:
                 break
         self._consume_symbol(';')
@@ -154,6 +195,9 @@ class CompilationEngine(object):
         if token not in ['constructor', 'function', 'method']:
             # no subroutineDec, just skip
             return False
+        is_method = (token == 'method')
+        self.symtable.reset_subroutine_table(is_method, self.class_name)
+
         self._start_block('subroutineDec')
         self._consume_keyword()  # 'constructor', 'function', 'method'
         # (void | type)
@@ -177,15 +221,15 @@ class CompilationEngine(object):
         if token == ')':   # no param list, skip
             self._end_block('parameterList')
             return
-        self._compile_type()
-        self._compile_var_name()
+        _type = self._compile_type()
+        self._compile_var_name(_type, 'argument')
         # 0 or more (type, varName)
         while True:
             token = self.tokenizer.peek_next()
             if token == ',':
                 self._consume_symbol(',')
-                self._compile_type()
-                self._compile_var_name()
+                _type = self._compile_type()
+                self._compile_var_name(_type, 'argument')
             else:
                 break
         self._end_block('parameterList')
@@ -196,14 +240,14 @@ class CompilationEngine(object):
             return False
         self._start_block('varDec')
         self._consume_keyword('var')
-        self._compile_type()
-        self._compile_var_name()
+        _type = self._compile_type()
+        self._compile_var_name(_type, 'local')
         # 0 or more varName
         while True:
             token = self.tokenizer.peek_next()
             if token == ',':
                 self._consume_symbol(',')
-                self._compile_var_name()
+                self._compile_var_name(_type, 'local')
             else:
                 break
         self._consume_symbol(';')
@@ -297,7 +341,10 @@ class CompilationEngine(object):
             if token_type in ['integerConstant', 'stringConstant']:
                 self._write_curr_token()
             elif token in ['true', 'false', 'null', 'this']:  # keywordConstant
-                self._write_curr_token()
+                if token == 'this':  # test `this`
+                    self._write_curr_identifier('use')
+                else:
+                    self._write_curr_token()
             elif token == '(':  # '(' expression ')'
                 self.tokenizer.move_back()
                 self._consume_symbol('(')
@@ -310,17 +357,15 @@ class CompilationEngine(object):
             else:
                 assert token_type == 'identifier'  # the curr token type must be identifier to meet the remaining rules
                 next_token = self.tokenizer.peek_next()
+                self.tokenizer.move_back()
                 if next_token == '[':  # varName '[' expression ']'
-                    self.tokenizer.move_back()
                     self._compile_var_name()
                     self._consume_symbol('[')
                     self.compile_expression()
                     self._consume_symbol(']')
                 elif next_token in '(.':  # subroutineCall
-                    self.tokenizer.move_back()
                     self._compile_subroutine_call()
                 else:  # varName
-                    self.tokenizer.move_back()
                     self._compile_var_name()
         self._end_block('term')
 

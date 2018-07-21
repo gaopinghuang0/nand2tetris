@@ -1,31 +1,25 @@
 ## Project 11: Compiler II - Code Generation
-1. Description: https://www.nand2tetris.org/project11
-2. Lecture notes: https://docs.wixstatic.com/ugd/44046b_78430a86b638470fba194ed461044ae9.pdf
+Compile `*.jack` into `*.vm`.
 
+* Description: https://www.nand2tetris.org/project11
+* Lecture notes: https://docs.wixstatic.com/ugd/44046b_78430a86b638470fba194ed461044ae9.pdf
 
 ### Getting Started
-Unit test for a single dir
+Unit test a single dir
 ```bash
-# tokenizer
-./main_tokenizer.py  Square/  test/
-./xml_compare_helper.py -t Square/  test/
-# analyzer
-./main_analyzer.py  Square/  test/
-./xml_compare_helper.py -a Square/  test/
-```
+# symbol table
+./test_symbol_table.py Seven/ test/  # then manually check the output xml
 
-Integral test for all dirs
-```bash
-$ ./test_runner.sh -t   # test tokenizer
-$ ./test_runner.sh -a   # test analyzer
+# compiler
+./jack_compiler.py Seven/ test/  # then load the *.vm into VMEmulator
 ```
 
 ### Recommended implementation and test
 * JackCompiler -> Tokenizer (done in project 10) -> SymbolTable -> CompilationEngine (done in project 10, but needs update) -> VMWriter
-* Seven -> 
-* All the APIs are given in the lecture notes mentioned above
-* To unit test SymbolTable, just reuse project 10 code, output special/customized tag (e.g., not just `identifier` but `field 0 | static 1 | ...`) for each variable into xml code, and then check the output xml code
-* To unit test JackCompiler, load the generated `*.vm` file into `tools/VMEmulator.[bat|sh]` and run script.
+* Seven -> ConvertToBin -> Square -> Average -> Pong -> ComplexArrays. Note that for Pong, adjust the slider of VMEmulator to make it run slowly, otherwise the speed is too fast to play the game.
+* All the APIs are given in the `images/API-*.png`
+* To unit test **SymbolTable**, just modify project 10 code, output special/customized tag (e.g., not just `identifier` but `field 0 | static 1 | ...`) for each variable into xml code, and then check the output xml code manually. The test cases include `ExpressoinlessSquare` (copied from project 10) and `TestMethodType` (I made up to solely test `method-type subroutine` with parameterList. It's not runnable.)
+* To unit test **JackCompiler**, load the generated `*.vm` file into `tools/VMEmulator.[bat|sh]` and run script.
 
 
 ### Notes:
