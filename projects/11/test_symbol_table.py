@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+
+"""
+test SymbolTable
+Just modify project 10 code, output special/customized tag
+(e.g., not just `identifier` but `field 0 | static 1 | ...`) for each variable
+into xml code, and then check the output xml code manually. 
+The test cases include `ExpressoinlessSquare` (copied from project 10) and 
+`TestMethodType` (I made up to solely test `method-type subroutine` 
+with parameterList. It's not runnable.)
+"""
+
+# Author: Gaoping Huang
+# Since: 07/21/2018
+
 import sys
 import os
 
@@ -6,10 +20,6 @@ from core.jack_tokenizer import JackTokenizer
 from core.compilation_engine import CompilationEngine
 
 SUFFIX = '.my.xml'
-# test SymbolTable, just reuse project 10 code and examples, especially for identifier, 
-# (e.g., not just `identifier` but `field 0 | static 1 | ...`, `defined` or `used`) 
-# output special/customized tag for each variable into xml code, 
-# and then check the output xml code manually
 class TestSymbolTable(object):
     def __init__(self, infile_or_dir, output_dir=None):
         self.infile_or_dir = infile_or_dir
