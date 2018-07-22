@@ -4,5 +4,8 @@
 *.dat
 *.out
 
+# ignore pdf of the book
+*.pdf
+
 *.pyc
 __pycache__
