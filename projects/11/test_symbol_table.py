@@ -17,7 +17,7 @@ import sys
 import os
 
 from core.jack_tokenizer import JackTokenizer
-from core.compilation_engine import CompilationEngine
+from core.compilation_engine_symbol_table import CompilationEngine
 
 SUFFIX = '.my.xml'
 class TestSymbolTable(object):
