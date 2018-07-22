@@ -1,4 +1,7 @@
 # a local .gitignore
 
+# ignore the test dir
 test/
+
+# ignore the generated *.vm file
 *.vm

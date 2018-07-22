@@ -1,4 +1,3 @@
 # a local .gitignore
 
 test/
-*.vm

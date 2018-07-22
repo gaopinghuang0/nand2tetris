@@ -21,10 +21,10 @@ class JackCompiler(object):
             self.output_dir = output_dir
         else: # guess output dir
             if self.isdir:
-                self.output_dir = infile_or_dir
+                self.output_dir = self.infile_or_dir
             else:
                 # use the same dir as input file
-                self.output_dir = os.path.dirname(infile_or_dir)
+                self.output_dir = os.path.dirname(self.infile_or_dir)
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
