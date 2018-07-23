@@ -28,13 +28,19 @@ class VMWriter(object):
         self.fp.write('{}\n'.format(command))
 
     def write_label(self, label):
-        pass
+        self.fp.write('label {}\n'.format(label))
 
     def write_goto(self, label):
-        pass
+        """
+        Write a VM goto command
+        """
+        self.fp.write('goto {}\n'.format(label))
 
     def write_if(self, label):
-        pass
+        """
+        Write a VM if-goto command
+        """
+        self.fp.write('if-goto {}\n'.format(label))
 
     def write_call(self, name, n_args):
         self.fp.write('call {} {}\n'.format(name, n_args))

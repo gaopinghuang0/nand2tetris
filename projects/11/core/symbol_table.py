@@ -43,9 +43,15 @@ class SymbolTable(object):
         raise KeyError('{} is undefined'.format(name))
 
     def get_type(self, name):
+        """
+        @return type: int | char | boolean | className
+        """
         return self._get_var(name)[0]
 
     def get_kind(self, name):
+        """
+        @return type: static | field | argument | local
+        """
         return self._get_var(name)[1]
 
     def get_index(self, name):

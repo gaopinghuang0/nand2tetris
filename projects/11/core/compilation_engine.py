@@ -11,6 +11,8 @@ class CompilationEngine(object):
         self.indent = 0  # indent spaces
         self.symtable = SymbolTable()
         self.class_name = None
+        self.label_indice = {'while': 0, 'if': 0}
+
 
     #### Below are some internal helper functions ####
 
@@ -96,6 +98,7 @@ class CompilationEngine(object):
                 self._write_curr_identifier('define')
             else:
                 self._write_curr_identifier('use')
+            return name
         else:
             raise ValueError('should have more tokens')
 
@@ -168,6 +171,16 @@ class CompilationEngine(object):
         # does not include '*' and '/'
         lookup = {'+': 'add', '-': 'sub', '=': 'eq', '>': 'gt', '<': 'lt', '&': 'and', '|': 'or'}
         return lookup[op]
+
+    def _gen_while_label(self):
+        curr_idx = self.label_indice['while']
+        self.label_indice['while'] += 1
+        return 'WHILE_EXP{}'.format(curr_idx), 'WHILE_END{}'.format(curr_idx)
+
+    def _gen_if_label(self):
+        curr_idx = self.label_indice['if']
+        self.label_indice['if'] += 1
+        return 'IF_FALSE{}'.format(curr_idx), 'IF_END{}'.format(curr_idx)
 
 
     #### Below are public APIs ####
@@ -296,7 +309,7 @@ class CompilationEngine(object):
     def compile_let(self):
         self._start_block('letStatement')
         self._consume_keyword('let')
-        self._compile_var_name()
+        name = self._compile_var_name()
         # ('[' expression ']')?
         token = self.tokenizer.peek_next()
         if token == '[':  # array left bracket
@@ -305,17 +318,25 @@ class CompilationEngine(object):
             self._consume_symbol(']')
         self._consume_symbol('=')
         self.compile_expression()
+        # save value to var
+        self.vm_writer.write_pop(self.symtable.get_kind(name), self.symtable.get_index(name))
         self._consume_symbol(';')
         self._end_block('letStatement')
 
     def compile_while(self):
         self._start_block('whileStatement')
         self._consume_keyword('while')
+        label_start, label_end = self._gen_while_label()
+        self.vm_writer.write_label(label_start)
         self._consume_symbol('(')
         self.compile_expression()
+        self.vm_writer.write_arithmetic('not')
+        self.vm_writer.write_if(label_end)
         self._consume_symbol(')')
         self._consume_symbol('{')
         self.compile_statements()
+        self.vm_writer.write_goto(label_start)
+        self.vm_writer.write_label(label_end)
         self._consume_symbol('}')
         self._end_block('whileStatement')
 
@@ -332,20 +353,27 @@ class CompilationEngine(object):
         self._end_block('returnStatement')
         
     def compile_if(self):
+        # based on `images/compile-if-statement.png`
         self._start_block('ifStatement')
+        label_1, label_2 = self._gen_if_label()
         self._consume_keyword('if')
         self._consume_symbol('(')
         self.compile_expression()
         self._consume_symbol(')')
+        self.vm_writer.write_arithmetic('not')
+        self.vm_writer.write_if(label_1)
         self._consume_symbol('{')
         self.compile_statements()
         self._consume_symbol('}')
+        self.vm_writer.write_goto(label_2)
         token = self.tokenizer.peek_next()
+        self.vm_writer.write_label(label_1)
         if token == 'else':
             self._consume_keyword('else')
             self._consume_symbol('{')
             self.compile_statements()
             self._consume_symbol('}')
+        self.vm_writer.write_label(label_2)
         self._end_block('ifStatement')
         
     def compile_expression(self):
@@ -377,8 +405,14 @@ class CompilationEngine(object):
                 # ['integerConstant', 'stringConstant']:
                 self.vm_writer.write_push('constant', token)
             elif token in ['true', 'false', 'null', 'this']:  # keywordConstant
-                if token == 'this':  # test `this`
+                if token == 'this':
                     self._write_curr_identifier('use')
+                elif token == 'true':
+                    # use -1 as true, could obtain by 0 followed by not, or 1 followed by neg
+                    self.vm_writer.write_push('constant', 0)
+                    self.vm_writer.write_arithmetic('not')
+                elif token in ['false', 'null']:
+                    self.vm_writer.write_push('constant', 0)
                 else:
                     self._write_curr_token()
             elif token == '(':  # '(' expression ')'
@@ -390,6 +424,7 @@ class CompilationEngine(object):
                 self.tokenizer.move_back()
                 self._consume_symbol(token)
                 self.compile_term()
+                self.vm_writer.write_arithmetic('neg' if token == '-' else 'not')
             else:
                 assert token_type == 'identifier'  # the curr token type must be identifier to meet the remaining rules
                 next_token = self.tokenizer.peek_next()
@@ -402,7 +437,9 @@ class CompilationEngine(object):
                 elif next_token in '(.':  # subroutineCall
                     self._compile_subroutine_call()
                 else:  # varName
-                    self._compile_var_name()
+                    name = self._compile_var_name()
+                    self.vm_writer.write_push(self.symtable.get_kind(name), self.symtable.get_index(name))
+
         self._end_block('term')
 
     def compile_expression_list(self):
