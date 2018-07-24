@@ -56,3 +56,13 @@ class SymbolTable(object):
 
     def get_index(self, name):
         return self._get_var(name)[2]
+
+    def get_var_count(self, kind):
+        """Get the number of vars defined with the given kind
+        @param kind: static | field | argument | local
+        """
+        if kind in self.subroutine_indice:
+            return self.subroutine_indice[kind]
+        if kind in self.class_indice:
+            return self.class_indice[kind]
+        raise KeyError('{} is undefined'.format(kind))

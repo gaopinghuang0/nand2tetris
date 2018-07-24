@@ -105,7 +105,7 @@ class CompilationEngine(object):
     def _compile_subroutine_name(self):
         return self._consume('identifier')
 
-    def _compile_subroutine_body(self):
+    def _compile_subroutine_body(self, func_kind):
         self._start_block('subroutineBody')
         self._consume_symbol('{')
         total_locals = 0
@@ -116,6 +116,16 @@ class CompilationEngine(object):
                 break
 
         self.vm_writer.write_function(self.func_name, total_locals)
+        if func_kind == 'method':
+            # anchor `this` first
+            self._write_push_by_name('this')
+            self.vm_writer.write_pop('pointer', 0)
+        elif func_kind == 'constructor':
+            # alloc memory for `field vars`
+            n_field_vars = self.symtable.get_var_count('field')
+            self.vm_writer.write_push('constant', n_field_vars)
+            self.vm_writer.write_call('Memory.alloc', 1)
+            self.vm_writer.write_pop('pointer', 0)  # again, `this` is not `argument 0` within constructor
 
         self.compile_statements()
         self._consume_symbol('}')
@@ -145,21 +155,34 @@ class CompilationEngine(object):
             name = self.tokenizer.curr_token
             next_token = self.tokenizer.peek_next()
             self.tokenizer.move_back()
+            n_args = 0
             if next_token == '(':
+                # method call without obj or class name, we need to prepend class name
+                # and also push this onto stack. However, some method call is within constructor
+                # which has no argument this, thus we push pointer 0 onto stack
+                n_args = 1
                 func_name = self._compile_subroutine_name()
+                self.vm_writer.write_push('pointer', 0)
+                func_name = '{}.{}'.format(self.class_name, func_name)
             elif next_token == '.':
                 if self.symtable.is_var(name):
-                    prefix = self._compile_var_name()
+                    # obj.method call, need to replace obj with class name, 
+                    # and push obj as the first argument, increment the n_args
+                    n_args = 1
+                    obj_name = self._compile_var_name()
+                    class_name = self.symtable.get_type(obj_name)
+                    self._write_push_by_name(obj_name)
                 else:
-                    prefix = self._compile_class_name()
+                    # class.function
+                    class_name = self._compile_class_name()
                 self._consume_symbol('.')
                 func_name = self._compile_subroutine_name()
-                func_name = '{}.{}'.format(prefix, func_name)
+                func_name = '{}.{}'.format(class_name, func_name)
             else:
                 raise ValueError('Unknown symbol')
 
             self._consume_symbol('(')
-            n_args = self.compile_expression_list()
+            n_args += self.compile_expression_list()
             self._consume_symbol(')')
             self.vm_writer.write_call(func_name, n_args)
 
@@ -181,6 +204,19 @@ class CompilationEngine(object):
         curr_idx = self.label_indice['if']
         self.label_indice['if'] += 1
         return 'IF_FALSE{}'.format(curr_idx), 'IF_END{}'.format(curr_idx)
+
+    def _write_push_by_name(self, name):
+        kind = self.symtable.get_kind(name)
+        if kind == 'field':
+            kind = 'this'  # use `this` instead
+        self.vm_writer.write_push(kind, self.symtable.get_index(name))
+
+    def _write_pop_by_name(self, name):
+        kind = self.symtable.get_kind(name)
+        if kind == 'field':
+            kind = 'this'  # use `this` instead
+        self.vm_writer.write_pop(kind, self.symtable.get_index(name))
+
 
 
     #### Below are public APIs ####
@@ -221,11 +257,11 @@ class CompilationEngine(object):
         return True
 
     def compile_subroutine(self):
-        token = self.tokenizer.peek_next()
-        if token not in ['constructor', 'function', 'method']:
+        func_kind = self.tokenizer.peek_next()
+        if func_kind not in ['constructor', 'function', 'method']:
             # no subroutineDec, just skip
             return False
-        is_method = (token == 'method')
+        is_method = (func_kind == 'method')
         self.symtable.reset_subroutine_table(is_method, self.class_name)
 
         self._start_block('subroutineDec')
@@ -242,7 +278,7 @@ class CompilationEngine(object):
         self._consume_symbol('(')
         self.compile_parameter_list()
         self._consume_symbol(')')
-        self._compile_subroutine_body()
+        self._compile_subroutine_body(func_kind)
         self._end_block('subroutineDec')
         return True
 
@@ -319,7 +355,7 @@ class CompilationEngine(object):
         self._consume_symbol('=')
         self.compile_expression()
         # save value to var
-        self.vm_writer.write_pop(self.symtable.get_kind(name), self.symtable.get_index(name))
+        self._write_pop_by_name(name)
         self._consume_symbol(';')
         self._end_block('letStatement')
 
@@ -407,6 +443,9 @@ class CompilationEngine(object):
             elif token in ['true', 'false', 'null', 'this']:  # keywordConstant
                 if token == 'this':
                     self._write_curr_identifier('use')
+                    # `this` may appear in constructor, which means we have to use pointer 0
+                    # instead of argument 0
+                    self.vm_writer.write_push('pointer', 0)
                 elif token == 'true':
                     # use -1 as true, could obtain by 0 followed by not, or 1 followed by neg
                     self.vm_writer.write_push('constant', 0)
@@ -429,7 +468,7 @@ class CompilationEngine(object):
                 assert token_type == 'identifier'  # the curr token type must be identifier to meet the remaining rules
                 next_token = self.tokenizer.peek_next()
                 self.tokenizer.move_back()
-                if next_token == '[':  # varName '[' expression ']'
+                if next_token == '[':  # varName '[' expression ']', array
                     self._compile_var_name()
                     self._consume_symbol('[')
                     self.compile_expression()
@@ -438,7 +477,7 @@ class CompilationEngine(object):
                     self._compile_subroutine_call()
                 else:  # varName
                     name = self._compile_var_name()
-                    self.vm_writer.write_push(self.symtable.get_kind(name), self.symtable.get_index(name))
+                    self._write_push_by_name(name)
 
         self._end_block('term')
 
