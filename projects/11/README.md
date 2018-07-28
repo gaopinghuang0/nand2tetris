@@ -16,7 +16,7 @@ Unit test a single dir
 
 ### Recommended implementation and test
 * JackCompiler -> Tokenizer (done in project 10) -> SymbolTable -> CompilationEngine (done in project 10, but needs update) -> VMWriter
-* Seven -> ConvertToBin -> Square -> Average -> Pong -> ComplexArrays. Note that for Pong, adjust the slider of VMEmulator to make it run slowly, otherwise the speed is too fast to play the game.
+* Seven -> ConvertToBin -> Square -> Average -> Pong -> ComplexArrays. Note that for Pong, ~~adjust the slider of VMEmulator to make it run slowly~~, copy the code from Project 09, otherwise the speed is too fast to play the game.
 * All the APIs are given in the `images/API-*.png`
 * To unit test **SymbolTable**, just modify project 10 code, output special/customized tag (e.g., not just `identifier` but `field 0 | static 1 | ...`) for each variable into xml code, and then check the output xml code manually. The test cases include `ExpressoinlessSquare` (copied from project 10) and `TestMethodType` (I made up to solely test `method-type subroutine` with parameterList. It's not runnable.)
 * To unit test **JackCompiler**, load the generated `*.vm` file into `tools/VMEmulator.[bat|sh]` and run script. Also, it is helpful to use `tools/JackCompiler.[bat|sh]` to compile a test case into vm as an example.
