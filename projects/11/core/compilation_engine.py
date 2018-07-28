@@ -217,6 +217,29 @@ class CompilationEngine(object):
             kind = 'this'  # use `this` instead
         self.vm_writer.write_pop(kind, self.symtable.get_index(name))
 
+    def _compile_string(self, token):
+        # call String.new and appendChar for each char
+        n = len(token)
+        self.vm_writer.write_push('constant', n)
+        self.vm_writer.write_call('String.new', 1)
+        for c in token:
+            self.vm_writer.write_push('constant', ord(c))
+            self.vm_writer.write_call('String.appendChar', 2)
+
+    def _compile_array_on_the_right(self):
+        "compile arr[i] as right-value; arr[i] as left-value is compiled in compile_let()"
+        name = self._compile_var_name()
+        # push the base addr of arr onto the stack
+        self._write_push_by_name(name)
+        self._consume_symbol('[')
+        self.compile_expression()
+        self._consume_symbol(']')
+        # add the base addr with expression value to get the addr of the array element
+        self.vm_writer.write_arithmetic('add')
+        # anchor the addr to THAT
+        self.vm_writer.write_pop('pointer', 1)
+        # push the value of addr (i.e., the array element) onto the stack
+        self.vm_writer.write_push('that', 0)
 
 
     #### Below are public APIs ####
@@ -348,14 +371,31 @@ class CompilationEngine(object):
         name = self._compile_var_name()
         # ('[' expression ']')?
         token = self.tokenizer.peek_next()
+        is_array = False
         if token == '[':  # array left bracket
+            is_array = True
+            # push the base addr of arr onto the stack
+            self._write_push_by_name(name)
             self._consume_symbol('[')
             self.compile_expression()
             self._consume_symbol(']')
+            # add the base addr with expression value to get the addr of the array element
+            self.vm_writer.write_arithmetic('add')
+
         self._consume_symbol('=')
         self.compile_expression()
-        # save value to var
-        self._write_pop_by_name(name)
+        if is_array:
+            # save the value of expression to temp 0
+            self.vm_writer.write_pop('temp', 0)
+            # save the addr of array element into pointer 1 
+            self.vm_writer.write_pop('pointer', 1)
+            # push the value of expression from temp 0 onto the stack
+            self.vm_writer.write_push('temp', 0)
+            # save value to array element
+            self.vm_writer.write_pop('that', 0)
+        else:
+            # save value to var
+            self._write_pop_by_name(name)
         self._consume_symbol(';')
         self._end_block('letStatement')
 
@@ -438,8 +478,9 @@ class CompilationEngine(object):
             token = self.tokenizer.curr_token
             token_type = self.tokenizer.token_type()
             if token_type == 'integerConstant':
-                # ['integerConstant', 'stringConstant']:
                 self.vm_writer.write_push('constant', token)
+            elif token_type == 'stringConstant':
+                self._compile_string(token)
             elif token in ['true', 'false', 'null', 'this']:  # keywordConstant
                 if token == 'this':
                     self._write_curr_identifier('use')
@@ -469,10 +510,7 @@ class CompilationEngine(object):
                 next_token = self.tokenizer.peek_next()
                 self.tokenizer.move_back()
                 if next_token == '[':  # varName '[' expression ']', array
-                    self._compile_var_name()
-                    self._consume_symbol('[')
-                    self.compile_expression()
-                    self._consume_symbol(']')
+                    self._compile_array_on_the_right()
                 elif next_token in '(.':  # subroutineCall
                     self._compile_subroutine_call()
                 else:  # varName
