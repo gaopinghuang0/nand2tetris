@@ -16,7 +16,7 @@ class Memory {
         let ram = 0;  // so ram[i] is addr[0+i]
         let heap = 2048;  // heapBase
         let freeList = heap;
-        let freeList[0] = 0;  // freeList.next = null
+        let freeList[0] = null;  // freeList.next = null
         let freeList[1] = 14335;  // total length
 
         return;
@@ -46,20 +46,20 @@ class Memory {
         let prev = freeList;
         let curr = freeList;
         // here use first-fit
-        while (curr > 0) {
+        while (~(curr = 0)) {
             if (~(curr[1] < (size + 2))) {
                 // use this segment
                 if (curr[1] = (size + 2)) {
                     // has the same size, need to remove this segment from freeList
                     let prev[0] = curr[0];
-                    let curr[0] = 0;
+                    let curr[0] = null;
                     return curr;
                 } else {
                     // need to partition the curr segment and update freeList
                     let offset = curr[1] - size - 2;
                     let curr[1] = offset;
                     let object = curr + 2 + offset;
-                    let object[0] = 0;
+                    let object[0] = null;
                     let object[1] = size;
                     return object;
                 }
