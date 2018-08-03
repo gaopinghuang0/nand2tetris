@@ -1,0 +1,87 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Memory.jack
+
+/**
+ * Memory operations library.
+ */ 
+class Memory {
+    static Array ram;
+    static Array heap;
+    static Array freeList;
+
+    /** Initializes memory parameters. */
+    function void init() {
+        let ram = 0;  // so ram[i] is addr[0+i]
+        let heap = 2048;  // heapBase
+        let freeList = heap;
+        let freeList[0] = 0;  // freeList.next = null
+        let freeList[1] = 14335;  // total length
+
+        return;
+    }
+
+    /** Returns the value of the main memory at the given address. */
+    function int peek(int address) {
+        return ram[address];
+    }
+
+    /** Sets the value of the main memory at this address
+     *  to the given value. */
+    function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
+    }
+
+    /** finds and allocates from the heap a memory block of the 
+     *  specified size and returns a reference to its base address. */
+    function int alloc(int size) {
+        // search freeList using best-fit or first-fit to obtain a possible segment
+        // segment.size >= size + 2
+        var Array prev;
+        var Array curr;
+        var Array object;
+        var int offset;
+        let prev = freeList;
+        let curr = freeList;
+        // here use first-fit
+        while (curr > 0) {
+            if (~(curr[1] < (size + 2))) {
+                // use this segment
+                if (curr[1] = (size + 2)) {
+                    // has the same size, need to remove this segment from freeList
+                    let prev[0] = curr[0];
+                    let curr[0] = 0;
+                    return curr;
+                } else {
+                    // need to partition the curr segment and update freeList
+                    let offset = curr[1] - size - 2;
+                    let curr[1] = offset;
+                    let object = curr + 2 + offset;
+                    let object[0] = 0;
+                    let object[1] = size;
+                    return object;
+                }
+            }
+            // move to next segment
+            let prev = curr;
+            let curr = curr[0];
+        }
+
+        // invalid alloc;
+        return 0;
+    }
+
+    /** De-allocates the given object and frees its space. */
+    function void deAlloc(int object) {
+        // append the object to the end of freeList
+        var Array tail;
+        let tail = freeList;
+        while (tail[0]) {
+            let tail = tail[0];
+        }
+        let tail[0] = object;
+        return;
+    }    
+}
