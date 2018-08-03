@@ -1,0 +1,129 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Math.jack
+
+/**
+ * A basic math library.
+ */
+class Math {
+    static Array powers_of_two;
+
+    /** Initializes the library. */
+    // credit: https://github.com/havivha/Nand2Tetris/blob/master/12/Math.jack
+    function void init() {
+        let powers_of_two = Array.new(16);
+        let powers_of_two[0] = 1;
+        let powers_of_two[1] = 2;
+        let powers_of_two[2] = 4;
+        let powers_of_two[3] = 8;
+        let powers_of_two[4] = 16;
+        let powers_of_two[5] = 32;
+        let powers_of_two[6] = 64;
+        let powers_of_two[7] = 128;
+        let powers_of_two[8] = 256;
+        let powers_of_two[9] = 512;
+        let powers_of_two[10] = 1024;
+        let powers_of_two[11] = 2048;
+        let powers_of_two[12] = 4096;
+        let powers_of_two[13] = 8192;
+        let powers_of_two[14] = 16384;
+        let powers_of_two[15] = 16384 + 16384;  // 32768 is too big
+        return;
+    }
+
+    /** Returns the absolute value of x. */
+    function int abs(int x) {
+        if (x < 0) {
+            let x = -x;
+        }
+        return x;
+    }
+
+    /* Returns true if the i-th bit of x is 1, false otherwise */
+    function boolean bit(int x, int i) {
+        return ~((x & powers_of_two[i]) = 0);
+    }
+
+    /** Returns the product of x and y. */
+    function int multiply(int x, int y) {
+        var int i;
+        var int sum, shiftedX;
+
+        let sum = 0;
+        let shiftedX = x;
+        let i = 0;
+        while (i < 16) {  // 16-bit number
+            if (Math.bit(y, i)) {
+                let sum = sum + shiftedX;
+            }
+            let shiftedX = shiftedX + shiftedX;  // note: cannot use shiftedX*2 since multiply is not supported so far
+            let i = i + 1;
+        }
+        return sum;
+    }
+
+    /** Returns the integer part of x/y. */
+    function int divide(int x, int y) {
+        var int q;
+        var int neg_x, neg_y;
+        var int result;
+
+        let neg_x = x < 0;
+        let neg_y = y < 0;
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+
+        if (y > x) {
+            return 0;
+        }
+
+        let q = Math.divide(x, y+y);
+        if (x-(2*q*y) < y) {  // we have defined Multiply above, then the '*' symbol is ok
+            let result = q+q;  // 2*q is also fine, but slower than q+q
+        } else {
+            let result = q+q+1;
+        }
+
+        if (neg_x = neg_y) {
+            return result;
+        } else {
+            return -result;
+        }
+    }
+
+    /** Returns the integer part of the square root of x. */
+    function int sqrt(int x) {
+        var int y, j;
+        var int temp, square;
+        let y = 0;
+        let j = 7;  // 16-bit, 16/2-1
+        while (j > -1) {
+            let temp = y + powers_of_two[j];
+            let square = temp * temp;
+            if ((~(square > x)) & (square > 0)) {
+                let y = temp;
+            }
+            let j = j - 1;
+        }
+        return y;
+    }
+
+    /** Returns the greater number. */
+    function int max(int a, int b) {
+        if (a > b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+
+    /** Returns the smaller number. */
+    function int min(int a, int b) {
+        if (a < b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+}
