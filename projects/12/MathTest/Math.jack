@@ -101,7 +101,7 @@ class Math {
         while (j > -1) {
             let temp = y + powers_of_two[j];
             let square = temp * temp;
-            if ((~(square > x)) & (square > 0)) {
+            if (~(square > x) & (square > 0)) {
                 let y = temp;
             }
             let j = j - 1;
