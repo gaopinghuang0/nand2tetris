@@ -30,8 +30,13 @@ class Avatar {
         var int memAddress;
         let location = (32*y) + (x/16);
         let memAddress = 16384+location;
+        // each memory addr stores 16-bit value, namely 16 pixels (only white and black)
+        // for example, memAddr=16384 represents the first 16 pixels (x=0..15, y=0)
+        // memAddr=16385 represents the next 16 pixels (x=16..31, y=0)
+        // for the screen with width of 512 pixels, we have 512/16 = 32
+        // namely, if we go to next line (y + 1) with the same x, we have to use (memAddr+32)
         do Memory.poke(memAddress+0, 4064);
-        do Memory.poke(memAddress+32, 6192);
+        do Memory.poke(memAddress+32, 6192);  // 32*16 = 512
         do Memory.poke(memAddress+64, 4752);
         do Memory.poke(memAddress+96, 4112);
         do Memory.poke(memAddress+128, 2080);

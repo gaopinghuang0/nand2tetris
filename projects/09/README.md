@@ -26,6 +26,14 @@ $ ../../tools/VMEmulator.[sh|bat]
 ### Notes
 * More sample Jack apps (e.g., `Pong`) can be found in `./projects/11`. They are given as test cases for Jack compiler but can be re-purposed as samples.
 * A bitmap editor is available at <http://www.nand2tetris.org/projects/09/BitmapEditor/BitmapEditor.html>, which can be used to create customized sprite.
+* Screen and MemoryAddress: mentioned in `Adventure/Avatar.jack - draw()`, copied here
+```jack
+// each memory addr stores 16-bit value, namely 16 pixels (only white and black)
+// for example, memAddr=16384 represents the first 16 pixels (x=0..15, y=0)
+// memAddr=16385 represents the next 16 pixels (x=16..31, y=0)
+// for the screen with width of 512 pixels, we have 512/16 = 32
+// namely, if we go to next line (y + 1) with the same x, we have to use (memAddr+32)
+```
 * Syntax highlighting for Jack in Sublime text:
   * https://github.com/swarn/sublime-jack
   * https://www.sublimetext.com/docs/3/scope_naming.html
