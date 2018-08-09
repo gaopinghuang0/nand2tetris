@@ -13,10 +13,16 @@
 class Output {
 
     // Character map for printing on the left of a screen word
-    static Array charMaps; 
+    static Array charMaps;
+    static int cursor_row;
+    static int cursor_col;
+    static int screen;
 
     /** Initializes the screen and locates the cursor at the screen's top-left. */
     function void init() {
+        do Output.initMap();
+        let screen = 16384;
+        return;
     }
 
     // Initalizes the character map array
@@ -65,7 +71,8 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        // Gaoping: bitmap editor: https://arieljannai.gitlab.io/Nand2TetrisBitmapEditor/
+        do Output.create(65,12,30,51,51,63,51,51,51,51,0,0); // A
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -131,15 +138,15 @@ class Output {
         do Output.create(125,7,12,12,12,56,12,12,12,7,0,0);    // }
         do Output.create(126,38,45,25,0,0,0,0,0,0,0,0);        // ~
 
-	return;
+        return;
     }
 
     // Creates a character map array of the given char index with the given values.
     function void create(int index, int a, int b, int c, int d, int e,
-		         int f, int g, int h, int i, int j, int k) {
-	var Array map;
+                 int f, int g, int h, int i, int j, int k) {
+        var Array map;
 
-	let map = Array.new(11);
+        let map = Array.new(11);
         let charMaps[index] = map;
 
         let map[0] = a;
@@ -171,28 +178,96 @@ class Output {
     /** Moves the cursor to the j’th column of the i’th row,
      *  and erases the character that was there. */
     function void moveCursor(int i, int j) {
+        let cursor_row = i;
+        let cursor_col = j;
+        return;
     }
 
     /** Prints c at the cursor location and advances the cursor one
      *  column forward. */
     function void printChar(char c) {
+        var Array map;
+        var int i;
+        var int right_half;
+        var int mask;
+        var int bitmap;
+        var int memAddress;
+
+        let memAddress = (cursor_row*11*32) + (cursor_col/2);
+
+        let map = Output.getMap(c);
+        let right_half = cursor_col & 1;  // each memory addr can show two chars, left and right
+
+        let i = 0;
+        while (i < 11) {
+            let bitmap = map[i];
+            if (right_half = 1) {
+                let bitmap = bitmap * 256;
+                // binary format of memory value is in reverse order of 16 pixels
+                let mask = -1 & 255;  // right char is the most significant 8 bits
+            } else {
+                let mask = 255; // left char is the least significant 8 bits
+            }
+            let screen[memAddress] = screen[memAddress] & mask | bitmap;
+            let memAddress = memAddress + 32;
+            let i = i + 1;
+        }
+        // advance the cursor
+        if (cursor_col = 63) {
+            do Output.println();
+        } else {
+            let cursor_col = cursor_col + 1;
+        }
+        return;
     }
 
     /** Prints s starting at the cursor location, and advances the
      *  cursor appropriately. */
     function void printString(String s) {
+        var int i, length;
+        let i = 0;
+        while (i < s.length()) {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
     }
 
     /** Prints i starting at the cursor location, and advances the
      *  cursor appropriately. */
     function void printInt(int i) {
+        // credit: https://github.com/havivha/Nand2Tetris/blob/master/12/Output.jack
+        var String s;
+        let s = String.new(10);  // all integer will be less than 10 digits
+        do s.setInt(i);
+        do Output.printString(s);
+        do s.dispose();
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        if (cursor_row < 22) {
+            let cursor_row = cursor_row + 1;
+        } else {
+            // reset to (0,0)
+            let cursor_row = 0;
+        }
+        let cursor_col = 0;
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if (cursor_col > 0) {
+            let cursor_col = cursor_col - 1;
+        } else {
+            // goes up one row
+            if (cursor_row > 0) {
+                let cursor_row = cursor_row - 1;
+                let cursor_col = 63;
+            }
+        }
+        return;
     }
 }

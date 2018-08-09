@@ -25,7 +25,7 @@ $ ../../tools/VMEmulator.[sh|bat]
 
 ### Notes
 * More sample Jack apps (e.g., `Pong`) can be found in `./projects/11`. They are given as test cases for Jack compiler but can be re-purposed as samples.
-* A bitmap editor is available at <http://www.nand2tetris.org/projects/09/BitmapEditor/BitmapEditor.html>, which can be used to create customized sprite.
+* A bitmap editor is available at <https://arieljannai.gitlab.io/Nand2TetrisBitmapEditor/>, which can be used to create customized sprite.
 * Screen and MemoryAddress: mentioned in `Adventure/Avatar.jack - draw()`, copied here
 ```jack
 // each memory addr stores 16-bit value, namely 16 pixels (only white and black)
